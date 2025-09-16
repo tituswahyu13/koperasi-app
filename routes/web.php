@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AnggotaController;
 use App\Http\Controllers\SimpananController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ClosingController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -25,6 +26,9 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('anggota', AnggotaController::class);
     Route::resource('simpanan', SimpananController::class);
+
+    Route::get('/tutup-bulan', [ClosingController::class, 'index'])->name('closing.index');
+    Route::post('/tutup-bulan', [ClosingController::class, 'closeMonth'])->name('closing.process');
 });
 
 require __DIR__ . '/auth.php';

@@ -40,6 +40,8 @@ class AnggotaController extends Controller
             'nama_lengkap' => 'required|string|max:255',
             'alamat' => 'nullable|string',
             'no_hp' => 'nullable|string|max:15',
+            'simpanan_wajib' => 'required|numeric|min:0',
+            'simpanan_manasuka' => 'required|numeric|min:0',
         ]);
 
         // 2. Buat Akun User (untuk login)
@@ -54,6 +56,8 @@ class AnggotaController extends Controller
             'nama_lengkap' => $validatedData['nama_lengkap'],
             'alamat' => $validatedData['alamat'],
             'no_hp' => $validatedData['no_hp'],
+            'simpanan_wajib' => $validatedData['simpanan_wajib'],
+            'simpanan_manasuka' => $validatedData['simpanan_manasuka'],
         ]);
 
         return redirect()->route('anggota.index')->with('success', 'Anggota berhasil ditambahkan!');
@@ -74,10 +78,10 @@ class AnggotaController extends Controller
     {
         // Debug: Log parameter yang diterima
         Log::info('Edit method called with ID:', ['id' => $id]);
-        
+
         // Ambil data anggota berdasarkan ID
         $anggota = Anggota::with('user')->findOrFail($id);
-        
+
         // Debug: Log data anggota
         Log::info('Edit Anggota Data:', [
             'id' => $anggota->id,
@@ -88,7 +92,7 @@ class AnggotaController extends Controller
             'user_loaded' => $anggota->user ? 'yes' : 'no',
             'username' => $anggota->user ? $anggota->user->username : 'null'
         ]);
-        
+
         return view('anggota.edit', compact('anggota'));
     }
 
@@ -101,6 +105,8 @@ class AnggotaController extends Controller
             'nama_lengkap' => 'required|string|max:255',
             'alamat' => 'nullable|string',
             'no_hp' => 'nullable|string|max:15',
+            'simpanan_wajib' => 'required|numeric|min:0',
+            'simpanan_manasuka' => 'required|numeric|min:0',
         ]);
 
         // Ambil data anggota berdasarkan ID

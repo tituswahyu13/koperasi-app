@@ -14,7 +14,10 @@ return new class extends Migration
             $table->string('nama_lengkap');
             $table->string('alamat')->nullable();
             $table->string('no_hp', 15)->nullable();
-            $table->decimal('saldo_simpanan', 15, 2)->default(0);
+            $table->decimal('simpanan_wajib', 15, 2)->default(0);
+            $table->decimal('simpanan_manasuka', 15, 2)->default(0);
+            $table->decimal('saldo_wajib', 15, 2)->default(0);
+            $table->decimal('saldo_manasuka', 15, 2)->default(0);
             $table->timestamps();
         });
     }

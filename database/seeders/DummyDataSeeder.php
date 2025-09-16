@@ -31,21 +31,10 @@ class DummyDataSeeder extends Seeder
             'nama_lengkap' => 'Budi Santoso',
             'alamat' => 'Jl. Kenangan Indah No. 123',
             'no_hp' => '081234567890',
-            'saldo_simpanan' => 5000000,
-        ]);
-
-        // Tambahkan beberapa data simpanan
-        Simpanan::create([
-            'anggota_id' => $anggota->id,
-            'jumlah_simpanan' => 1000000,
-            'jenis_simpanan' => 'bulanan',
-            'tanggal_simpanan' => '2025-01-10',
-        ]);
-        Simpanan::create([
-            'anggota_id' => $anggota->id,
-            'jumlah_simpanan' => 2000000,
-            'jenis_simpanan' => 'harian',
-            'tanggal_simpanan' => '2025-02-15',
+            'simpanan_wajib' => 100000, // Tambahkan nilai dummy
+            'simpanan_manasuka' => 200000, // Tambahkan nilai dummy
+            'saldo_wajib' => 0, // Perbarui ini
+            'saldo_manasuka' => 0, // Perbarui ini
         ]);
 
         // Tambahkan pinjaman dummy

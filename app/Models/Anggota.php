@@ -21,7 +21,10 @@ class Anggota extends Model
         'nama_lengkap',
         'alamat',
         'no_hp',
-        'saldo_simpanan',
+        'simpanan_wajib',
+        'simpanan_manasuka',
+        'saldo_wajib',
+        'saldo_manasuka',
     ];
 
     public function user(): BelongsTo

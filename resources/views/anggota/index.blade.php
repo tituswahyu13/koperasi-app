@@ -28,7 +28,10 @@
                             <tr>
                                 <th class="py-2 px-4 border-b">Nama Lengkap</th>
                                 <th class="py-2 px-4 border-b">Username</th>
-                                <th class="py-2 px-4 border-b">Saldo Simpanan</th>
+                                <th class="py-2 px-4 border-b">Simpanan Wajib</th>
+                                <th class="py-2 px-4 border-b">Saldo Simpanan Wajib</th>
+                                <th class="py-2 px-4 border-b">Simpanan Manasuka</th>
+                                <th class="py-2 px-4 border-b">Saldo Simpanan Manasuka</th>
                                 <th class="py-2 px-4 border-b">Aksi</th>
                             </tr>
                         </thead>
@@ -37,7 +40,10 @@
                             <tr>
                                 <td class="py-2 px-4 border-b">{{ $anggota->nama_lengkap }}</td>
                                 <td class="py-2 px-4 border-b">{{ $anggota->user ? $anggota->user->username : 'N/A' }}</td>
-                                <td class="py-2 px-4 border-b">Rp {{ number_format($anggota->saldo_simpanan, 2, ',', '.') }}</td>
+                                <td class="py-2 px-4 border-b">Rp {{ number_format($anggota->simpanan_wajib, 2, ',', '.') }}</td>
+                                <td class="py-2 px-4 border-b">Rp {{ number_format($anggota->saldo_wajib, 2, ',', '.') }}</td>
+                                <td class="py-2 px-4 border-b">Rp {{ number_format($anggota->simpanan_manasuka, 2, ',', '.') }}</td>
+                                <td class="py-2 px-4 border-b">Rp {{ number_format($anggota->saldo_manasuka, 2, ',', '.') }}</td>
                                 <td class="py-2 px-4 border-b">
                                     <a href="{{ url('/anggota/' . $anggota->id . '/edit') }}" class="text-blue-500 hover:underline">Edit</a>
                                     <form action="{{ url('/anggota/' . $anggota->id) }}" method="POST" class="inline">
