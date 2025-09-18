@@ -32,6 +32,7 @@
                                 <th class="py-2 px-4 border-b">Saldo Simpanan Wajib</th>
                                 <th class="py-2 px-4 border-b">Simpanan Manasuka</th>
                                 <th class="py-2 px-4 border-b">Saldo Simpanan Manasuka</th>
+                                <th class="py-2 px-4 border-b">Saldo Simpanan Mandiri</th>
                                 <th class="py-2 px-4 border-b">Aksi</th>
                             </tr>
                         </thead>
@@ -44,6 +45,7 @@
                                 <td class="py-2 px-4 border-b">Rp {{ number_format($anggota->saldo_wajib, 2, ',', '.') }}</td>
                                 <td class="py-2 px-4 border-b">Rp {{ number_format($anggota->simpanan_manasuka, 2, ',', '.') }}</td>
                                 <td class="py-2 px-4 border-b">Rp {{ number_format($anggota->saldo_manasuka, 2, ',', '.') }}</td>
+                                <td class="py-2 px-4 border-b">Rp {{ number_format($anggota->saldo_mandiri, 2, ',', '.') }}</td>
                                 <td class="py-2 px-4 border-b">
                                     <a href="{{ url('/anggota/' . $anggota->id . '/edit') }}" class="text-blue-500 hover:underline">Edit</a>
                                     <form action="{{ url('/anggota/' . $anggota->id) }}" method="POST" class="inline">

@@ -121,18 +121,15 @@ class AnggotaController extends Controller
     /**
      * Menghapus data anggota dari database.
      */
-    public function destroy($id)
+    public function destroy(Anggota $anggota)
     {
-        // Ambil data anggota berdasarkan ID
-        $anggota = Anggota::with('user')->findOrFail($id);
-
-        // Hapus data anggota
-        $anggota->delete();
-
-        // Hapus juga akun user yang terhubung
+        // Hapus juga akun user secara permanen
         if ($anggota->user) {
-            $anggota->user->delete();
+            $anggota->user->delete(); // Ini akan menghapus permanen
         }
+
+        // Hapus data anggota secara soft delete
+        $anggota->delete();
 
         return redirect()->route('anggota.index')->with('success', 'Anggota berhasil dihapus!');
     }

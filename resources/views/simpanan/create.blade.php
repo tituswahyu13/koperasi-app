@@ -20,7 +20,7 @@
                             <label for="anggota_id" class="block text-gray-700">Pilih Anggota</label>
                             <select name="anggota_id" id="anggota_id" class="w-full border-gray-300 rounded-md">
                                 @foreach ($anggotas as $anggota)
-                                    <option value="{{ $anggota->id }}">{{ $anggota->nama_lengkap }}</option>
+                                <option value="{{ $anggota->id }}">{{ $anggota->nama_lengkap }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -31,10 +31,11 @@
                         </div>
 
                         <div class="mb-4">
-                            <label for="jenis_simpanan" class="block text-gray-700">Jenis Simpanan</label>
-                            <select name="jenis_simpanan" id="jenis_simpanan" class="w-full border-gray-300 rounded-md">
-                                <option value="harian">Harian</option>
-                                <option value="bulanan">Bulanan</option>
+                            <label for="jenis_simpanan" class="block text-gray-700 font-bold mb-2">Jenis Simpanan</label>
+                            <select name="jenis_simpanan" id="jenis_simpanan" class="w-full border-gray-300 rounded-md shadow-sm">
+                                <option value="wajib">Wajib</option>
+                                <option value="manasuka">Manasuka</option>
+                                <option value="mandiri">Mandiri</option>
                             </select>
                         </div>
 
