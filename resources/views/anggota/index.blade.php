@@ -1,14 +1,10 @@
-{{-- resources/views/anggota/index.blade.php --}}
-
 <x-app-layout>
-    {{-- You can optionally add a header slot for the page title --}}
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
             {{ __('Daftar Anggota') }}
         </h2>
     </x-slot>
 
-    {{-- The rest of your content goes here --}}
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -23,43 +19,45 @@
 
                     <a href="{{ route('anggota.create') }}" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md shadow-sm transition">Tambah Anggota</a>
 
-                    <table class="min-w-full bg-white border mt-4">
-                        <thead>
-                            <tr>
-                                <th class="py-2 px-4 border-b">Nama Lengkap</th>
-                                <th class="py-2 px-4 border-b">Username</th>
-                                <th class="py-2 px-4 border-b">Simpanan Wajib</th>
-                                <th class="py-2 px-4 border-b">Saldo Simpanan Wajib</th>
-                                <th class="py-2 px-4 border-b">Simpanan Manasuka</th>
-                                <th class="py-2 px-4 border-b">Saldo Simpanan Manasuka</th>
-                                <th class="py-2 px-4 border-b">Saldo Simpanan Mandiri</th>
-                                <th class="py-2 px-4 border-b">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($anggotas as $anggota)
-                            <tr>
-                                <td class="py-2 px-4 border-b">{{ $anggota->nama_lengkap }}</td>
-                                <td class="py-2 px-4 border-b">{{ $anggota->user ? $anggota->user->username : 'N/A' }}</td>
-                                <td class="py-2 px-4 border-b">Rp {{ number_format($anggota->simpanan_wajib, 2, ',', '.') }}</td>
-                                <td class="py-2 px-4 border-b">Rp {{ number_format($anggota->saldo_wajib, 2, ',', '.') }}</td>
-                                <td class="py-2 px-4 border-b">Rp {{ number_format($anggota->simpanan_manasuka, 2, ',', '.') }}</td>
-                                <td class="py-2 px-4 border-b">Rp {{ number_format($anggota->saldo_manasuka, 2, ',', '.') }}</td>
-                                <td class="py-2 px-4 border-b">Rp {{ number_format($anggota->saldo_mandiri, 2, ',', '.') }}</td>
-                                <td class="py-2 px-4 border-b">
-                                    <a href="{{ url('/anggota/' . $anggota->id . '/edit') }}" class="text-blue-500 hover:underline">Edit</a>
-                                    <form action="{{ url('/anggota/' . $anggota->id) }}" method="POST" class="inline">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="text-red-500 hover:underline ml-2" onclick="return confirm('Apakah Anda yakin ingin menghapus anggota ini?')">Hapus</button>
-                                    </form>
-                                </td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                    <div class="overflow-x-auto mt-6 rounded-lg border">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Nama Lengkap</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Username</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Simpanan Wajib</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Simpanan Manasuka</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Saldo Wajib</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Saldo Manasuka</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                @foreach ($anggotas as $anggota)
+                                <tr class="hover:bg-gray-50 transition duration-150 ease-in-out">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 border-r">{{ $anggota->nama_lengkap }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r">{{ $anggota->user ? $anggota->user->username : 'N/A' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r">Rp {{ number_format($anggota->simpanan_wajib, 2, ',', '.') }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r">Rp {{ number_format($anggota->simpanan_manasuka, 2, ',', '.') }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r">Rp {{ number_format($anggota->saldo_wajib, 2, ',', '.') }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r">Rp {{ number_format($anggota->saldo_manasuka, 2, ',', '.') }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
+                                        <a href="{{ url('/anggota/' . $anggota->id . '/edit') }}" class="text-indigo-600 hover:text-indigo-900">Edit</a>
+                                        <form action="{{ url('/anggota/' . $anggota->id) }}" method="POST" class="inline ml-4">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('Apakah Anda yakin ingin menghapus anggota ini?')">Hapus</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
 
-                    {{ $anggotas->links() }}
+                    <div class="mt-4">
+                        {{ $anggotas->links() }}
+                    </div>
                 </div>
             </div>
         </div>
