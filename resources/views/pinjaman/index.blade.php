@@ -64,7 +64,7 @@
                                         @else
                                         <a href="{{ route('pinjaman.show', $pinjaman->id) }}" class="text-blue-600 hover:text-blue-900">Lihat Detail</a>
                                         @endif
-                                    </td>ß
+                                    </td>
                                 </tr>
                                 @endforeach
                             </tbody>

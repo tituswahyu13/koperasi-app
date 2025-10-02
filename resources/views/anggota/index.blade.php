@@ -42,8 +42,8 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r">Rp {{ number_format($anggota->saldo_wajib, 2, ',', '.') }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r">Rp {{ number_format($anggota->saldo_manasuka, 2, ',', '.') }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
-                                        <a href="{{ url('/anggota/' . $anggota->id . '/edit') }}" class="text-indigo-600 hover:text-indigo-900">Edit</a>
-                                        <form action="{{ url('/anggota/' . $anggota->id) }}" method="POST" class="inline ml-4">
+                                        <a href="{{ route('anggota.edit', $anggota) }}" class="text-indigo-600 hover:text-indigo-900">Edit</a>
+                                        <form action="{{ route('anggota.destroy', $anggota) }}" method="POST" class="inline ml-4">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('Apakah Anda yakin ingin menghapus anggota ini?')">Hapus</button>

@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('pinjamans', function (Blueprint $table) {
-            //
+            $table->decimal('bunga', 15, 2)->change(); // Pastikan 15, 2
+            $table->decimal('sisa_pinjaman', 15, 2)->change(); // Pastikan 15, 2
         });
     }
 

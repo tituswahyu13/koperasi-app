@@ -23,10 +23,15 @@ class Anggota extends Model
         'alamat',
         'no_hp',
         'simpanan_wajib',
+        'simpanan_wajib_khusus',
         'simpanan_manasuka',
+        'voucher',
         'saldo_wajib',
         'saldo_manasuka',
         'saldo_mandiri',
+        'saldo_pokok',
+        'saldo_wajib_khusus',
+        'saldo_wajib_pinjam',
     ];
 
     public function user(): BelongsTo
@@ -42,5 +47,13 @@ class Anggota extends Model
     public function pinjaman(): HasMany
     {
         return $this->hasMany(Pinjaman::class);
+    }
+
+    /**
+     * Get the route key for the model.
+     */
+    public function getRouteKeyName(): string
+    {
+        return 'id';
     }
 }
