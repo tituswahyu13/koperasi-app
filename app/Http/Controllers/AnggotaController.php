@@ -7,7 +7,7 @@ use App\Models\User; // Pastikan model User diimpor
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash; // Diperlukan untuk mengenkripsi password
 use Illuminate\Support\Facades\Log; // Untuk logging
-
+use Illuminate\Support\Facades\DB;
 
 class AnggotaController extends Controller
 {
@@ -40,27 +40,62 @@ class AnggotaController extends Controller
             'nama_lengkap' => 'required|string|max:255',
             'alamat' => 'nullable|string',
             'no_hp' => 'nullable|string|max:15',
+            // Inputan simpanan wajib per bulan (Simpanan Wajib)
             'simpanan_wajib' => 'required|numeric|min:0',
+            // Inputan saldo awal yang akan masuk ke saldo_pokok
+            'simpanan_pokok' => 'required|numeric|min:0', 
+            // Inputan saldo awal yang akan masuk ke voucher
+            'voucher' => 'required|numeric|min:0',
+            // Inputan saldo awal yang akan masuk ke simpanan_wajib_khusus
+            'simpanan_wajib_khusus' => 'required|numeric|min:0',
+            // Inputan saldo awal yang akan masuk ke simpanan_manasuka
             'simpanan_manasuka' => 'required|numeric|min:0',
         ]);
 
-        // 2. Buat Akun User (untuk login)
-        $user = User::create([
-            'username' => $validatedData['username'],
-            'password' => Hash::make($validatedData['password']),
-        ]);
+        // Gunakan transaksi untuk memastikan User dan Anggota tercipta bersamaan
+        DB::beginTransaction();
 
-        // 3. Buat Data Anggota (profil) dan hubungkan dengan User
-        Anggota::create([
-            'user_id' => $user->id,
-            'nama_lengkap' => $validatedData['nama_lengkap'],
-            'alamat' => $validatedData['alamat'],
-            'no_hp' => $validatedData['no_hp'],
-            'simpanan_wajib' => $validatedData['simpanan_wajib'],
-            'simpanan_manasuka' => $validatedData['simpanan_manasuka'],
-        ]);
+        try {
+            // 2. Buat Akun User (untuk login)
+            $user = User::create([
+                'username' => $validatedData['username'],
+                'password' => Hash::make($validatedData['password']),
+            ]);
 
-        return redirect()->route('anggota.index')->with('success', 'Anggota berhasil ditambahkan!');
+            // 3. Buat Data Anggota (profil) dan hubungkan dengan User
+            Anggota::create([
+                'user_id' => $user->id,
+                'status_aktif' => 1, // SET DEFAULT VALUE '1'
+                'nama_lengkap' => $validatedData['nama_lengkap'],
+                'alamat' => $validatedData['alamat'],
+                'no_hp' => $validatedData['no_hp'],
+                
+                // Simpan nilai iuran wajib per bulan
+                'simpanan_wajib' => $validatedData['simpanan_wajib'],
+                'simpanan_wajib_khusus' => $validatedData['simpanan_wajib_khusus'], // Simpan nilai iuran wajib khusus per bulan
+                'simpanan_manasuka' => $validatedData['simpanan_manasuka'], // Simpan nilai iuran manasuka per bulan
+
+                // Inisialisasi Saldo Awal (berdasarkan inputan)
+                'saldo_pokok' => $validatedData['simpanan_pokok'], // Simpan Simpanan Pokok ke saldo_pokok
+                'voucher' => $validatedData['voucher'], // Simpan Voucher ke kolom voucher
+                
+                // Saldo lain diinisialisasi 0 (sesuai default kolom)
+                // 'saldo_wajib' => 0, // Ditinggalkan, karena ini adalah akumulasi iuran bulanan
+                // 'saldo_manasuka' => 0,
+                // 'saldo_mandiri' => 0,
+                // 'saldo_wajib_pinjam' => 0,
+                // 'saldo_jasa_anggota' => 0,
+            ]);
+
+            DB::commit();
+
+            return redirect()->route('anggota.index')->with('success', 'Anggota berhasil ditambahkan!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error creating Anggota: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Terjadi kesalahan saat menyimpan anggota: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -99,23 +134,76 @@ class AnggotaController extends Controller
     /**
      * Memperbarui data anggota di database.
      */
+    // public function update(Request $request, $id)
+    // {
+    //     $validatedData = $request->validate([
+    //         'password' => 'nullable|string|min:8',
+    //         'status_aktif' => 'required|in:0,1',
+    //         'nama_lengkap' => 'required|string|max:255',
+    //         'alamat' => 'nullable|string',
+    //         'no_hp' => 'nullable|string|max:15',
+    //         'simpanan_wajib' => 'required|numeric|min:0',
+    //         'simpanan_wajib_khusus' => 'required|numeric|min:0',
+    //         'simpanan_manasuka' => 'required|numeric|min:0',
+    //         'voucher' => 'required|numeric|min:0',
+    //     ]);
+
+    //     // Ambil data anggota berdasarkan ID
+    //     $anggota = Anggota::findOrFail($id);
+
+    //     // Perbarui data di tabel 'anggotas'
+    //     $anggota->update($validatedData);
+
+    //     return redirect()->route('anggota.index')->with('success', 'Data anggota berhasil diperbarui!');
+    // }
+
     public function update(Request $request, $id)
     {
+        // 1. Validasi Input
         $validatedData = $request->validate([
+            // User Data - Password nullable/opsional saat update
+            'password' => 'nullable|string|min:8', 
+
+            // Anggota Data
+            'status_aktif' => 'required|in:0,1',
             'nama_lengkap' => 'required|string|max:255',
             'alamat' => 'nullable|string',
             'no_hp' => 'nullable|string|max:15',
+            
+            // Iuran/Saldo yang diizinkan diubah melalui form edit
             'simpanan_wajib' => 'required|numeric|min:0',
+            'simpanan_wajib_khusus' => 'required|numeric|min:0',
             'simpanan_manasuka' => 'required|numeric|min:0',
+            'voucher' => 'required|numeric|min:0', // Voucher sekarang divalidasi dan diizinkan diubah
         ]);
 
-        // Ambil data anggota berdasarkan ID
-        $anggota = Anggota::findOrFail($id);
+        // Ambil data anggota dan user terkait
+        $anggota = Anggota::with('user')->findOrFail($id);
 
-        // Perbarui data di tabel 'anggotas'
-        $anggota->update($validatedData);
+        DB::beginTransaction();
+        try {
+            // 2. Update Akun User (Hanya jika password diisi)
+            if (!empty($validatedData['password'])) {
+                $anggota->user->update([
+                    'password' => Hash::make($validatedData['password']),
+                ]);
+            }
 
-        return redirect()->route('anggota.index')->with('success', 'Data anggota berhasil diperbarui!');
+            // 3. Update Data Anggota (profil, iuran, dan voucher)
+            // Hapus 'password' dari data yang akan diupdate ke model Anggota
+            $anggotaData = $validatedData;
+            unset($anggotaData['password']); 
+
+            $anggota->update($anggotaData); // Voucher sekarang akan terupdate
+
+            DB::commit();
+
+            return redirect()->route('anggota.index')->with('success', 'Data anggota berhasil diperbarui!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error updating Anggota: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Terjadi kesalahan saat memperbarui anggota: ' . $e->getMessage());
+        }
     }
 
     /**

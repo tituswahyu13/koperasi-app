@@ -19,14 +19,21 @@ class Anggota extends Model
      */
     protected $fillable = [
         'user_id',
+        'status_aktif', // Ditambahkan: Status keanggotaan
         'nama_lengkap',
         'alamat',
         'no_hp',
         'simpanan_wajib',
+        'simpanan_wajib_khusus', // Ditambahkan
         'simpanan_manasuka',
+        'voucher', // Ditambahkan
+        'saldo_pokok', // Ditambahkan
         'saldo_wajib',
+        'saldo_wajib_khusus', // Ditambahkan
         'saldo_manasuka',
         'saldo_mandiri',
+        'saldo_wajib_pinjam',
+        'saldo_jasa_anggota',
     ];
 
     public function user(): BelongsTo
