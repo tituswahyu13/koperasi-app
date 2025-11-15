@@ -108,44 +108,83 @@ class PinjamanController extends Controller
         $config = $this->loanTypes[$pinjaman->loan_type];
 
         if ($validatedData['status'] == 'approved') {
-            $jumlahPinjaman = $pinjaman->jumlah_pinjaman;
-            $tenor = $pinjaman->tenor;
-
-            // Hitung Bunga Total = Jumlah Pinjaman * Bunga Rate per bulan * Tenor
-            $bungaRate = $config['bunga'];
-            $bungaTotal = $jumlahPinjaman * $bungaRate * $tenor;
             
-            // Hitung Biaya Admin = Jumlah Pinjaman * Admin Rate
-            $adminRate = $config['admin'];
-            $biayaAdmin = $jumlahPinjaman * $adminRate;
+            DB::beginTransaction();
+            try {
+                $jumlahPinjaman = $pinjaman->jumlah_pinjaman;
+                $tenor = $pinjaman->tenor;
+                $anggota = $pinjaman->anggota;
 
-            // Total Pinjaman yang harus dibayar = Jumlah Pinjaman + Bunga Total
-            $totalPinjamanBersih = $jumlahPinjaman + $bungaTotal;
+                // --- 1. HITUNG BIAYA DAN BUNGA ---
+                
+                // Hitung Bunga Total = Jumlah Pinjaman * Bunga Rate per bulan * Tenor
+                $bungaRate = $config['bunga'];
+                $bungaTotal = $jumlahPinjaman * $bungaRate * $tenor;
+                
+                // Hitung Biaya Admin = Jumlah Pinjaman * Admin Rate
+                $adminRate = $config['admin'];
+                $biayaAdmin = $jumlahPinjaman * $adminRate;
 
-            // Perhitungan Jatuh Tempo Angsuran Pertama (Sederhana)
-            $tanggalJatuhTempo = null;
-            $tglPinjaman = Carbon::parse($pinjaman->tanggal_pengajuan);
-            
-            // Logika penentuan tanggal jatuh tempo
-            if ($pinjaman->payment_date_type === 'tgl_1') {
-                // Tentukan tanggal 1 bulan berikutnya
-                $tanggalJatuhTempo = $tglPinjaman->copy()->addMonth()->day(1);
-            } elseif ($pinjaman->payment_date_type === 'tgl_15') {
-                 // Tentukan tanggal 15 bulan berikutnya
-                $tanggalJatuhTempo = $tglPinjaman->copy()->addMonth()->day(15);
+                // Hitung Potongan Wajib Pinjam (1% dari Pokok Pinjaman)
+                $potonganRateWajibPinjam = 0.01;
+                $potonganWajibPinjam = 0;
+
+                // LOGIKA BARU: Potongan 1% hanya untuk Pinjaman Uang JK Panjang
+                if ($pinjaman->loan_type === 'uang_jk_panjang') {
+                    $potonganWajibPinjam = $jumlahPinjaman * $potonganRateWajibPinjam;
+                }
+                
+                // Total Pinjaman yang harus dibayar = Jumlah Pinjaman + Bunga Total
+                $totalPinjamanBersih = $jumlahPinjaman + $bungaTotal;
+
+                // --- 2. PERHITUNGAN JATUH TEMPO ---
+
+                $tanggalJatuhTempo = null;
+                $tglPinjaman = Carbon::parse($pinjaman->tanggal_pengajuan);
+                
+                if ($pinjaman->payment_date_type === 'tgl_1') {
+                    $tanggalJatuhTempo = $tglPinjaman->copy()->addMonth()->day(1);
+                } elseif ($pinjaman->payment_date_type === 'tgl_15') {
+                    $tanggalJatuhTempo = $tglPinjaman->copy()->addMonth()->day(15);
+                }
+                
+                // --- 3. UPDATE SALDO ANGGOTA (Potongan Wajib Pinjam) ---
+                
+                if ($potonganWajibPinjam > 0) {
+                    // Tambahkan potongan ke saldo_wajib_pinjam anggota
+                    $anggota->increment('saldo_wajib_pinjam', $potonganWajibPinjam);
+
+                    // Catat transaksi simpanan untuk Saldo Wajib Pinjam (Opsional, untuk logging transaksi)
+                    Simpanan::create([
+                        'anggota_id' => $anggota->id,
+                        'jumlah_simpanan' => $potonganWajibPinjam,
+                        'jenis_simpanan' => 'wajib_pinjam',
+                        'deskripsi' => "Potongan 1% wajib pinjam untuk Pinjaman ID #{$pinjaman->id} (Jenis: {$pinjaman->loan_type})",
+                        'tanggal_simpanan' => now(),
+                    ]);
+                }
+
+                // --- 4. UPDATE STATUS PINJAMAN ---
+                
+                $pinjaman->update([
+                    'status' => 'approved',
+                    'bunga' => $bungaTotal,
+                    'biaya_admin' => $biayaAdmin,
+                    'sisa_pinjaman' => $totalPinjamanBersih,
+                    'tanggal_jatuh_tempo' => $tanggalJatuhTempo,
+                ]);
+                
+                DB::commit();
+                return redirect()->route('pinjaman.index')->with('success', 'Pinjaman berhasil disetujui! Saldo Wajib Pinjam telah ditambahkan.');
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                // Log error detail untuk debugging
+                \Illuminate\Support\Facades\Log::error('Pinjaman approval failed: ' . $e->getMessage()); 
+                return redirect()->route('pinjaman.index')->with('error', 'Gagal menyetujui pinjaman. Transaksi dibatalkan: ' . $e->getMessage());
             }
-            // Jika 'manual', tanggal jatuh tempo akan null/diabaikan di sini
-
-            $pinjaman->update([
-                'status' => 'approved',
-                'bunga' => $bungaTotal,
-                'biaya_admin' => $biayaAdmin,
-                'sisa_pinjaman' => $totalPinjamanBersih,
-                'tanggal_jatuh_tempo' => $tanggalJatuhTempo,
-            ]);
-            
-            return redirect()->route('pinjaman.index')->with('success', 'Pinjaman berhasil disetujui!');
         } else {
+            // Status Rejected
             $pinjaman->update(['status' => 'rejected']);
             return redirect()->route('pinjaman.index')->with('success', 'Pinjaman berhasil ditolak.');
         }
@@ -171,6 +210,14 @@ class PinjamanController extends Controller
             // Gunakan presisi 2 desimal untuk angsuran
             $angsuranPerBulan = round($totalTagihan / $pinjaman->tenor, 2);
         }
+        
+        // Tambahkan perhitungan potongan wajib pinjam untuk ditampilkan di view
+        $potonganWajibPinjam = 0;
+        // LOGIKA BARU: Potongan 1% hanya untuk Pinjaman Uang JK Panjang
+        if ($pinjaman->loan_type === 'uang_jk_panjang') {
+             $potonganWajibPinjam = $pinjaman->jumlah_pinjaman * 0.01; // 1%
+        }
+        $pinjaman->potongan_wajib_pinjam = $potonganWajibPinjam;
         
         // Simpan data perhitungan ke instance pinjaman untuk dilempar ke view
         $pinjaman->total_tagihan = $totalTagihan;
