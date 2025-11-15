@@ -1,9 +1,8 @@
 {{-- resources/views/pinjaman/index.blade.php --}}
-
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Manajemen Pinjaman') }}
+            {{ __('Daftar Pinjaman') }}
         </h2>
     </x-slot>
 
@@ -18,18 +17,25 @@
                         {{ session('success') }}
                     </div>
                     @endif
+                    @if (session('error'))
+                    <div class="bg-red-200 text-red-800 p-3 rounded mb-4">
+                        {{ session('error') }}
+                    </div>
+                    @endif
 
-                    <a href="{{ route('pinjaman.create') }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md shadow-sm transition">Ajukan Pinjaman Baru</a>
+                    <a href="{{ route('pinjaman.create') }}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md shadow-sm transition">Ajukan Pinjaman Baru</a>
 
                     <div class="overflow-x-auto mt-6 rounded-lg border">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Nama Anggota</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Tanggal Pengajuan</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Jumlah Pinjaman</th>
-                                    <th class="px-6 py-3 ... border-r">Jenis Pinjaman</th>
-                                    <th class="px-6 py-3 ... border-r">Tenor</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Tgl. Pengajuan</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Anggota</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Jenis Pinjaman</th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Pokok Pinjaman (Rp)</th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Tenor (Bulan)</th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Total Bunga (Rp)</th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Sisa Pinjaman (Rp)</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Status</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
                                 </tr>
@@ -37,34 +43,32 @@
                             <tbody class="bg-white divide-y divide-gray-200">
                                 @foreach ($pinjamans as $pinjaman)
                                 <tr class="hover:bg-gray-50 transition duration-150 ease-in-out">
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 border-r">{{ $pinjaman->anggota->nama_lengkap }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r">{{ $pinjaman->tanggal_pengajuan }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r">Rp {{ number_format($pinjaman->jumlah_pinjaman, 2, ',', '.') }}</td>
-                                    <td class="px-6 py-4 ... border-r">{{ ucfirst($pinjaman->jenis_pinjaman) }}</td>
-                                    <td class="px-6 py-4 ... border-r">{{ $pinjaman->tenor }} bulan</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r">{{ \Carbon\Carbon::parse($pinjaman->tanggal_pengajuan)->format('d-m-Y') }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 border-r">{{ $pinjaman->anggota->nama_lengkap ?? 'N/A' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r">{{ ucwords(str_replace('_', ' ', $pinjaman->loan_type)) }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 border-r text-right">Rp {{ number_format($pinjaman->jumlah_pinjaman, 2, ',', '.') }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r text-right">{{ $pinjaman->tenor }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r text-right">Rp {{ number_format($pinjaman->bunga, 2, ',', '.') }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 border-r text-right">Rp {{ number_format($pinjaman->sisa_pinjaman, 2, ',', '.') }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r">
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $pinjaman->status == 'pending' ? 'bg-yellow-100 text-yellow-800' : ($pinjaman->status == 'approved' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800') }}">
-                                            {{ ucfirst($pinjaman->status) }}
+                                        @php
+                                            $statusClass = [
+                                                'pending' => 'bg-yellow-100 text-yellow-800',
+                                                'approved' => 'bg-green-100 text-green-800',
+                                                'rejected' => 'bg-red-100 text-red-800',
+                                            ][$pinjaman->status] ?? 'bg-gray-100 text-gray-800';
+                                        @endphp
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $statusClass }}">
+                                            {{ ucwords($pinjaman->status) }}
                                         </span>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                         @if ($pinjaman->status == 'pending')
-                                        <form action="{{ route('pinjaman.update', $pinjaman->id) }}" method="POST" class="inline">
-                                            @csrf
-                                            @method('PUT')
-                                            <input type="hidden" name="status" value="approved">
-                                            <button type="submit" class="text-green-600 hover:text-green-900">Setujui</button>
-                                        </form>
-                                        <form action="{{ route('pinjaman.update', $pinjaman->id) }}" method="POST" class="inline ml-4">
-                                            @csrf
-                                            @method('PUT')
-                                            <input type="hidden" name="status" value="rejected">
-                                            <button type="submit" class="text-red-600 hover:text-red-900">Tolak</button>
-                                        </form>
+                                            <a href="{{ route('pinjaman.edit', $pinjaman->id) }}" class="text-indigo-600 hover:text-indigo-900">Setujui/Tolak</a>
                                         @else
-                                        <a href="{{ route('pinjaman.show', $pinjaman->id) }}" class="text-blue-600 hover:text-blue-900">Lihat Detail</a>
+                                            <a href="{{ route('pinjaman.show', $pinjaman->id) }}" class="text-blue-600 hover:text-blue-900">Detail</a>
                                         @endif
-                                    </td>ß
+                                    </td>
                                 </tr>
                                 @endforeach
                             </tbody>

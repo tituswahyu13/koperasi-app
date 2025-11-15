@@ -1,7 +1,9 @@
+{{-- resources/views/simpanan/index.blade.php --}}
+
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Manajemen Simpanan') }}
+            {{ __('Daftar Transaksi Simpanan') }}
         </h2>
     </x-slot>
 
@@ -17,6 +19,12 @@
                     </div>
                     @endif
 
+                    @if (session('error'))
+                    <div class="bg-red-200 text-red-800 p-3 rounded mb-4">
+                        {{ session('error') }}
+                    </div>
+                    @endif
+
                     <a href="{{ route('simpanan.create') }}" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md shadow-sm transition">Catat Simpanan Baru</a>
 
                     <div class="overflow-x-auto mt-6 rounded-lg border">
@@ -25,25 +33,38 @@
                                 <tr>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Tanggal</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Nama Anggota</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Jumlah Simpanan</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Jenis</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Jenis Simpanan</th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Jumlah (Rp)</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Deskripsi</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                                 @foreach ($simpanans as $simpanan)
                                 <tr class="hover:bg-gray-50 transition duration-150 ease-in-out">
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r">{{ $simpanan->tanggal_simpanan }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 border-r">{{ $simpanan->anggota->nama_lengkap }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r">Rp {{ number_format($simpanan->jumlah_simpanan, 2, ',', '.') }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r">{{ $simpanan->jenis_simpanan }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r">{{ \Carbon\Carbon::parse($simpanan->tanggal_simpanan)->format('d-m-Y') }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 border-r">{{ $simpanan->anggota->nama_lengkap ?? 'Anggota Dihapus' }}</td>
+                                    
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r">
+                                        {{ ucwords(str_replace('_', ' ', $simpanan->jenis_simpanan)) }}
+                                    </td>
+                                    
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-800 border-r text-right">Rp {{ number_format($simpanan->jumlah_simpanan, 2, ',', '.') }}</td>
+                                    
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r">{{ $simpanan->deskripsi ?? '-' }}</td>
+                                    
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
-                                        <a href="{{ route('simpanan.edit', $simpanan->id) }}" class="text-indigo-600 hover:text-indigo-900">Edit</a>
-                                        <form action="{{ route('simpanan.destroy', $simpanan->id) }}" method="POST" class="inline ml-4">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('Apakah Anda yakin ingin menghapus transaksi ini?')">Hapus</button>
-                                        </form>
+                                        {{-- Cek apakah jenis simpanan termasuk yang bisa diedit/dihapus secara manual --}}
+                                        @if (in_array($simpanan->jenis_simpanan, ['mandiri', 'jasa_anggota']))
+                                            <a href="{{ route('simpanan.edit', $simpanan->id) }}" class="text-indigo-600 hover:text-indigo-900">Edit</a>
+                                            <form action="{{ route('simpanan.destroy', $simpanan->id) }}" method="POST" class="inline ml-4">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('Apakah Anda yakin ingin menghapus transaksi ini? Saldo anggota akan dikurangi.')">Hapus</button>
+                                            </form>
+                                        @else
+                                            <span class="text-gray-400 text-xs">Otomatis</span>
+                                        @endif
                                     </td>
                                 </tr>
                                 @endforeach

@@ -70,12 +70,12 @@
                                     
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
                                         <a href="{{ route('anggota.edit', $anggota->id) }}" class="text-indigo-600 hover:text-indigo-900">Edit</a>
-                                        <form action="{{ route('anggota.destroy', $anggota->id) }}" method="POST" class="inline ml-4">
+                                        <!-- <form action="{{ route('anggota.destroy', $anggota->id) }}" method="POST" class="inline ml-4">
                                             @csrf
                                             @method('DELETE')
                                             {{-- PERINGATAN: Menggunakan form konfirmasi native, pastikan ini sesuai dengan lingkungan Anda --}}
                                             <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('Apakah Anda yakin ingin menghapus anggota ini secara permanen? Penghapusan ini akan menghapus data Anggota dan User.')">Hapus</button>
-                                        </form>
+                                        </form> -->
                                     </td>
                                 </tr>
                                 @endforeach
