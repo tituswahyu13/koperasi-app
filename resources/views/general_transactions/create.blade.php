@@ -42,15 +42,33 @@
                         </div>
 
                         <div class="mb-4">
-                            <label for="amount" class="block text-gray-700">Jumlah (Rp)</label>
-                            <input type="number" name="amount" id="amount" class="w-full border-gray-300 rounded-md" value="{{ old('amount') }}" required min="1" step="0.01">
-                            @error('amount') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
+                            <label for="category" class="block text-gray-700">Kategori Transaksi</label>
+                            <select name="category" id="category" class="w-full border-gray-300 rounded-md" required>
+                                <option value="">--- Pilih Kategori ---</option>
+                                
+                                <optgroup label="Pemasukan Koperasi">
+                                    <option value="pendapatan_toko" {{ old('category') == 'pendapatan_toko' ? 'selected' : '' }}>Pendapatan Penjualan Toko</option>
+                                    <option value="bunga_pinjaman_bank" {{ old('category') == 'bunga_pinjaman_bank' ? 'selected' : '' }}>Pemasukan Bunga Bank</option>
+                                    <option value="hutang_usaha" {{ old('category') == 'hutang_usaha' ? 'selected' : '' }}>Hutang Usaha</option>
+                                    <option value="pemasukan_lain" {{ old('category') == 'pemasukan_lain' ? 'selected' : '' }}>Pemasukan Lain-lain</option>
+                                </optgroup>
+                                
+                                <optgroup label="Pengeluaran Koperasi">
+                                    <option value="belanja_toko" {{ old('category') == 'belanja_toko' ? 'selected' : '' }}>Belanja Stok Toko</option>
+                                    <option value="gaji_karyawan" {{ old('category') == 'gaji_karyawan' ? 'selected' : '' }}>Gaji Karyawan Operasional</option>
+                                    <option value="biaya_sewa" {{ old('category') == 'biaya_sewa' ? 'selected' : '' }}>Biaya Sewa Kantor/Toko</option>
+                                    <option value="pembayaran_hutang" {{ old('category') == 'pembayaran_hutang' ? 'selected' : '' }}>Pembayaran Utang Usaha</option>
+                                    <option value="pengeluaran_lain" {{ old('category') == 'pengeluaran_lain' ? 'selected' : '' }}>Pengeluaran Lain-lain</option>
+                                </optgroup>
+                                
+                            </select>
+                            @error('category') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                         </div>
 
                         <div class="mb-4">
-                            <label for="category" class="block text-gray-700">Kategori (Contoh: Gaji, Sewa, Bunga Bank)</label>
-                            <input type="text" name="category" id="category" class="w-full border-gray-300 rounded-md" value="{{ old('category') }}" required>
-                            @error('category') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
+                            <label for="amount" class="block text-gray-700">Jumlah (Rp)</label>
+                            <input type="number" name="amount" id="amount" class="w-full border-gray-300 rounded-md" value="{{ old('amount') }}" required min="1" step="0.01">
+                            @error('amount') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                         </div>
 
                         <div class="mb-4">

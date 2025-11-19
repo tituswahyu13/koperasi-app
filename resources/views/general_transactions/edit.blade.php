@@ -43,15 +43,45 @@
                         </div>
 
                         <div class="mb-4">
-                            <label for="amount" class="block text-gray-700">Jumlah (Rp)</label>
-                            <input type="number" name="amount" id="amount" class="w-full border-gray-300 rounded-md" value="{{ old('amount', $general_transaction->amount) }}" required min="1" step="0.01">
-                            @error('amount') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
+                            <label for="category" class="block text-gray-700">Kategori Transaksi</label>
+                            <select name="category" id="category" class="w-full border-gray-300 rounded-md" required>
+                                <option value="">--- Pilih Kategori ---</option>
+                                
+                                @php
+                                    // Definisikan categories secara lokal (sama seperti di view Create)
+                                    $categories = [
+                                        'pendapatan_toko' => 'Pendapatan Penjualan Toko',
+                                        'bunga_pinjaman_bank' => 'Pemasukan Bunga Bank',
+                                        'hutang_usaha' => 'Hutang Usaha',
+                                        'pemasukan_lain' => 'Pemasukan Lain-lain',
+                                        'belanja_toko' => 'Belanja Stok Toko',
+                                        'gaji_karyawan' => 'Gaji Karyawan Operasional',
+                                        'biaya_sewa' => 'Biaya Sewa Kantor/Toko',
+                                        'pembayaran_hutang' => 'Pembayaran Utang Usaha',
+                                        'pengeluaran_lain' => 'Pengeluaran Lain-lain'
+                                    ];
+                                @endphp
+                                
+                                <optgroup label="Pemasukan Koperasi">
+                                @foreach (['pendapatan_toko', 'bunga_pinjaman_bank', 'pemasukan_lain'] as $key)
+                                    <option value="{{ $key }}" {{ old('category', $general_transaction->category) == $key ? 'selected' : '' }}>{{ $categories[$key] }}</option>
+                                @endforeach
+                                </optgroup>
+                                
+                                <optgroup label="Pengeluaran Koperasi">
+                                @foreach (['belanja_toko', 'gaji_karyawan', 'biaya_sewa', 'pembayaran_hutang', 'pengeluaran_lain'] as $key)
+                                    <option value="{{ $key }}" {{ old('category', $general_transaction->category) == $key ? 'selected' : '' }}>{{ $categories[$key] }}</option>
+                                @endforeach
+                                </optgroup>
+                                
+                            </select>
+                            @error('category') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                         </div>
 
                         <div class="mb-4">
-                            <label for="category" class="block text-gray-700">Kategori</label>
-                            <input type="text" name="category" id="category" class="w-full border-gray-300 rounded-md" value="{{ old('category', $general_transaction->category) }}" required>
-                            @error('category') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
+                            <label for="amount" class="block text-gray-700">Jumlah (Rp)</label>
+                            <input type="number" name="amount" id="amount" class="w-full border-gray-300 rounded-md" value="{{ old('amount', $general_transaction->amount) }}" required min="1" step="0.01">
+                            @error('amount') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                         </div>
 
                         <div class="mb-4">
@@ -62,7 +92,7 @@
 
                         <div class="mb-4">
                             <label for="transaction_date" class="block text-gray-700">Tanggal Transaksi</label>
-                            {{-- Memastikan format tanggal adalah Y-m-d untuk input type="date" --}}
+                            {{-- Karena kita sudah menambahkan $casts di Model, format() akan berfungsi --}}
                             <input type="date" name="transaction_date" id="transaction_date" class="w-full border-gray-300 rounded-md" 
                                 value="{{ old('transaction_date', $general_transaction->transaction_date->format('Y-m-d')) }}" required>
                             @error('transaction_date') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
