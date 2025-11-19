@@ -1,5 +1,3 @@
-{{-- resources/views/anggota/create.blade.php --}}
-
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
@@ -15,20 +13,20 @@
 
                     {{-- Menampilkan pesan error jika ada --}}
                     @if ($errors->any())
-                        <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-                            <ul>
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
+                    <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+                        <ul>
+                            @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
                     @endif
 
                     {{-- Menampilkan pesan sukses/error dari Controller --}}
                     @if (session('error'))
-                        <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-                            {{ session('error') }}
-                        </div>
+                    <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+                        {{ session('error') }}
+                    </div>
                     @endif
 
                     <form action="{{ route('anggota.store') }}" method="POST">
@@ -73,43 +71,45 @@
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             {{-- Simpanan Pokok (Masuk ke saldo_pokok) --}}
                             <div class="mb-4">
-                                <label for="simpanan_pokok" class="block text-gray-700">Simpanan Pokok </label>
-                                <input type="number" name="simpanan_pokok" id="simpanan_pokok" class="w-full border-gray-300 rounded-md" value="{{ old('simpanan_pokok', 0) }}" required min="0">
-                                <x-input-error :messages="$errors->get('simpanan_pokok')" class="mt-2" />
-                                <!-- <p class="text-sm text-gray-500 mt-1">Nilai ini akan dicatat di `saldo_pokok`.</p> -->
+                                <label for="simpanan_pokok_awal" class="block text-gray-700">Simpanan Pokok (Saldo Awal)</label>
+                                {{-- PERBAIKAN: Mengganti name="simpanan_pokok" menjadi name="simpanan_pokok_awal" --}}
+                                <input type="number" name="simpanan_pokok_awal" id="simpanan_pokok_awal" class="w-full border-gray-300 rounded-md" value="{{ old('simpanan_pokok_awal', 0) }}" required min="0">
+                                <x-input-error :messages="$errors->get('simpanan_pokok_awal')" class="mt-2" />
                             </div>
                         </div>
 
-                        <h2 class="text-xl font-semibold mt-6 mb-3 border-b pb-1">Iuran/Simpanan (per Bulan)</h2>
+                        <h2 class="text-xl font-semibold mt-6 mb-3 border-b pb-1">Iuran Wajib (per Bulan)</h2>
 
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             {{-- Simpanan Wajib (Iuran Bulanan) --}}
                             <div class="mb-4">
-                                <label for="simpanan_wajib" class="block text-gray-700">Simpanan Wajib</label>
-                                <input type="number" name="simpanan_wajib" id="simpanan_wajib" class="w-full border-gray-300 rounded-md" value="{{ old('simpanan_wajib', 0) }}" required min="0">
-                                <x-input-error :messages="$errors->get('simpanan_wajib')" class="mt-2" />
+                                <label for="simpanan_wajib_per_bulan" class="block text-gray-700">Simpanan Wajib (Iuran Bulanan)</label>
+                                {{-- PERBAIKAN: Mengganti name="simpanan_wajib" menjadi name="simpanan_wajib_per_bulan" --}}
+                                <input type="number" name="simpanan_wajib_per_bulan" id="simpanan_wajib_per_bulan" class="w-full border-gray-300 rounded-md" value="{{ old('simpanan_wajib_per_bulan', 0) }}" required min="0">
+                                <x-input-error :messages="$errors->get('simpanan_wajib_per_bulan')" class="mt-2" />
                             </div>
 
                             {{-- Simpanan Wajib Khusus (Iuran Bulanan) --}}
                             <div class="mb-4">
-                                <label for="simpanan_wajib_khusus" class="block text-gray-700">Simpanan Wajib Khusus</label>
-                                <input type="number" name="simpanan_wajib_khusus" id="simpanan_wajib_khusus" class="w-full border-gray-300 rounded-md" value="{{ old('simpanan_wajib_khusus', 0) }}" required min="0">
-                                <x-input-error :messages="$errors->get('simpanan_wajib_khusus')" class="mt-2" />
+                                <label for="simpanan_wajib_khusus_per_bulan" class="block text-gray-700">Simpanan Wajib Khusus (Iuran Bulanan)</label>
+                                {{-- PERBAIKAN: Mengganti name="simpanan_wajib_khusus" menjadi name="simpanan_wajib_khusus_per_bulan" --}}
+                                <input type="number" name="simpanan_wajib_khusus_per_bulan" id="simpanan_wajib_khusus_per_bulan" class="w-full border-gray-300 rounded-md" value="{{ old('simpanan_wajib_khusus_per_bulan', 0) }}" required min="0">
+                                <x-input-error :messages="$errors->get('simpanan_wajib_khusus_per_bulan')" class="mt-2" />
                             </div>
 
                             {{-- Simpanan Manasuka (Iuran Bulanan) --}}
                             <div class="mb-4">
-                                <label for="simpanan_manasuka" class="block text-gray-700">Simpanan Manasuka</label>
-                                <input type="number" name="simpanan_manasuka" id="simpanan_manasuka" class="w-full border-gray-300 rounded-md" value="{{ old('simpanan_manasuka', 0) }}" required min="0">
-                                <x-input-error :messages="$errors->get('simpanan_manasuka')" class="mt-2" />
+                                <label for="simpanan_manasuka_per_bulan" class="block text-gray-700">Simpanan Manasuka (Iuran Bulanan)</label>
+                                {{-- PERBAIKAN: Mengganti name="simpanan_manasuka" menjadi name="simpanan_manasuka_per_bulan" --}}
+                                <input type="number" name="simpanan_manasuka_per_bulan" id="simpanan_manasuka_per_bulan" class="w-full border-gray-300 rounded-md" value="{{ old('simpanan_manasuka_per_bulan', 0) }}" required min="0">
+                                <x-input-error :messages="$errors->get('simpanan_manasuka_per_bulan')" class="mt-2" />
                             </div>
 
-                            {{-- Voucher (Masuk ke kolom voucher) --}}
+                            {{-- Voucher --}}
                             <div class="mb-4">
-                                <label for="voucher" class="block text-gray-700">Voucher</label>
-                                <input type="number" name="voucher" id="voucher" class="w-full border-gray-300 rounded-md" value="{{ old('voucher', 0) }}" required min="0">
-                                <x-input-error :messages="$errors->get('voucher')" class="mt-2" />
-                                <!-- <p class="text-sm text-gray-500 mt-1">Nilai ini akan dicatat di `voucher`.</p> -->
+                                <label for="voucher_awal" class="block text-gray-700">Voucher (Saldo Awal)</label>
+                                <input type="number" name="voucher_awal" id="voucher_awal" class="w-full border-gray-300 rounded-md" value="{{ old('voucher_awal', 0) }}" required min="0">
+                                <x-input-error :messages="$errors->get('voucher_awal')" class="mt-2" />
                             </div>
                         </div>
 

@@ -21,7 +21,7 @@ Route::get('/', function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard'); // Pindahkan ke sini
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard'); 
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -29,10 +29,16 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('anggota', AnggotaController::class);
     Route::resource('simpanan', SimpananController::class);
+    
+    // Rute Pinjaman
     Route::resource('pinjaman', PinjamanController::class);
+    // Rute Pembayaran Pinjaman Manual BARU
+    Route::get('/pinjaman/{pinjaman}/pay', [PinjamanController::class, 'pay'])->name('pinjaman.pay');
+    Route::post('/pinjaman/{pinjaman}/process-payment', [PinjamanController::class, 'processPayment'])->name('pinjaman.process_payment');
 
+    // Rute Tutup Bulan (Closing) - Menggunakan method 'process' yang sudah kita buat
     Route::get('/tutup-bulan', [ClosingController::class, 'index'])->name('closing.index');
-    Route::post('/tutup-bulan', [ClosingController::class, 'closeMonth'])->name('closing.process');
+    Route::post('/tutup-bulan', [ClosingController::class, 'process'])->name('closing.process');
 
     Route::get('/simulasi', [SimulasiController::class, 'index'])->name('simulasi.index');
     Route::post('/simulasi/calculate', [SimulasiController::class, 'calculate'])->name('simulasi.calculate');

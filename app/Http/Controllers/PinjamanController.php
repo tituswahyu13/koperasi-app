@@ -5,8 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Anggota;
 use App\Models\Pinjaman;
 use App\Models\Simpanan;
+use App\Models\Payment; // Import model Payment
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB; // Added for transaction safety
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class PinjamanController extends Controller
@@ -17,6 +18,8 @@ class PinjamanController extends Controller
         'sebrak' => ['label' => 'Pinjaman Sebrak', 'bunga' => 0.02, 'admin' => 0.015],
         'piutang_barang' => ['label' => 'Piutang Barang', 'bunga' => 0.015, 'admin' => 0.015],
     ];
+
+    // ... (index, create, store methods remain the same) ...
 
     /**
      * Menampilkan daftar semua pengajuan pinjaman.
@@ -58,15 +61,13 @@ class PinjamanController extends Controller
         Pinjaman::create([
             'anggota_id' => $validatedData['anggota_id'],
             'jumlah_pinjaman' => $validatedData['jumlah_pinjaman'],
-            // Simpan jenis pinjaman
             'loan_type' => $validatedData['loan_type'], 
             'tenor' => $validatedData['tenor'],
             'payment_date_type' => $validatedData['payment_date_type'],
             'deskripsi' => $validatedData['deskripsi'] ?? null,
-            // Nilai Awal untuk status pending
             'jumlah_bayar' => 0,
             'bunga' => 0,
-            'biaya_admin' => 0, // Inisialisasi biaya admin
+            'biaya_admin' => 0, 
             'sisa_pinjaman' => 0,
             'status' => 'pending',
             'tanggal_pengajuan' => $validatedData['tanggal_pinjaman'],
@@ -78,12 +79,9 @@ class PinjamanController extends Controller
     /**
      * Menampilkan form persetujuan pinjaman (edit view).
      */
-    public function edit(Pinjaman $pinjaman)
+    public function edit(Pinjaman $pinjaman) // FIXED: Duplikasi 'public' dihapus
     {
-        // Memuat data anggota agar bisa ditampilkan di view
         $pinjaman->load('anggota'); 
-        
-        // Kita langsung tampilkan view persetujuan (edit)
         return view('pinjaman.edit', compact('pinjaman'));
     }
 
@@ -100,7 +98,6 @@ class PinjamanController extends Controller
             return redirect()->route('pinjaman.index')->with('error', 'Pinjaman ini sudah diproses.');
         }
         
-        // Pastikan pinjaman memiliki loan_type yang valid sebelum menghitung
         if (!isset($this->loanTypes[$pinjaman->loan_type])) {
             return redirect()->route('pinjaman.index')->with('error', 'Jenis pinjaman tidak valid untuk perhitungan.');
         }
@@ -117,11 +114,9 @@ class PinjamanController extends Controller
 
                 // --- 1. HITUNG BIAYA DAN BUNGA ---
                 
-                // Hitung Bunga Total = Jumlah Pinjaman * Bunga Rate per bulan * Tenor
                 $bungaRate = $config['bunga'];
                 $bungaTotal = $jumlahPinjaman * $bungaRate * $tenor;
                 
-                // Hitung Biaya Admin = Jumlah Pinjaman * Admin Rate
                 $adminRate = $config['admin'];
                 $biayaAdmin = $jumlahPinjaman * $adminRate;
 
@@ -129,12 +124,10 @@ class PinjamanController extends Controller
                 $potonganRateWajibPinjam = 0.01;
                 $potonganWajibPinjam = 0;
 
-                // LOGIKA BARU: Potongan 1% hanya untuk Pinjaman Uang JK Panjang
                 if ($pinjaman->loan_type === 'uang_jk_panjang') {
                     $potonganWajibPinjam = $jumlahPinjaman * $potonganRateWajibPinjam;
                 }
                 
-                // Total Pinjaman yang harus dibayar = Jumlah Pinjaman + Bunga Total
                 $totalPinjamanBersih = $jumlahPinjaman + $bungaTotal;
 
                 // --- 2. PERHITUNGAN JATUH TEMPO ---
@@ -151,10 +144,8 @@ class PinjamanController extends Controller
                 // --- 3. UPDATE SALDO ANGGOTA (Potongan Wajib Pinjam) ---
                 
                 if ($potonganWajibPinjam > 0) {
-                    // Tambahkan potongan ke saldo_wajib_pinjam anggota
                     $anggota->increment('saldo_wajib_pinjam', $potonganWajibPinjam);
 
-                    // Catat transaksi simpanan untuk Saldo Wajib Pinjam (Opsional, untuk logging transaksi)
                     Simpanan::create([
                         'anggota_id' => $anggota->id,
                         'jumlah_simpanan' => $potonganWajibPinjam,
@@ -179,7 +170,6 @@ class PinjamanController extends Controller
 
             } catch (\Exception $e) {
                 DB::rollBack();
-                // Log error detail untuk debugging
                 \Illuminate\Support\Facades\Log::error('Pinjaman approval failed: ' . $e->getMessage()); 
                 return redirect()->route('pinjaman.index')->with('error', 'Gagal menyetujui pinjaman. Transaksi dibatalkan: ' . $e->getMessage());
             }
@@ -195,44 +185,150 @@ class PinjamanController extends Controller
      */
     public function show(Pinjaman $pinjaman)
     {
-        // Muat data anggota yang terkait dengan pinjaman
         $pinjaman->load('anggota');
         
-        // Mendapatkan konfigurasi pinjaman
         $config = $this->loanTypes[$pinjaman->loan_type] ?? null;
 
-        // Perhitungan Angsuran Bulanan (Total Tagihan / Tenor)
         $angsuranPerBulan = 0;
-        // Total Tagihan = Pokok Pinjaman + Bunga Total
         $totalTagihan = $pinjaman->jumlah_pinjaman + $pinjaman->bunga;
 
         if ($pinjaman->status == 'approved' && $pinjaman->tenor > 0) {
-            // Gunakan presisi 2 desimal untuk angsuran
             $angsuranPerBulan = round($totalTagihan / $pinjaman->tenor, 2);
         }
         
         // Tambahkan perhitungan potongan wajib pinjam untuk ditampilkan di view
         $potonganWajibPinjam = 0;
-        // LOGIKA BARU: Potongan 1% hanya untuk Pinjaman Uang JK Panjang
         if ($pinjaman->loan_type === 'uang_jk_panjang') {
-             $potonganWajibPinjam = $pinjaman->jumlah_pinjaman * 0.01; // 1%
+             $potonganWajibPinjam = $pinjaman->jumlah_pinjaman * 0.01;
         }
         $pinjaman->potongan_wajib_pinjam = $potonganWajibPinjam;
+        
+        // Ambil riwayat pembayaran dari tabel 'payments' yang baru
+        $payments = Payment::where('pinjaman_id', $pinjaman->id)->orderBy('tanggal_bayar', 'asc')->get();
+        
+        // Hitung total pembayaran yang sudah dilakukan
+        $totalDibayar = $payments->sum('total_bayar');
+
+        // Update sisa pinjaman berdasarkan total pembayaran
+        $pinjaman->sisa_pinjaman_bersih = $pinjaman->sisa_pinjaman - $totalDibayar;
+        if ($pinjaman->sisa_pinjaman_bersih < 0) {
+            $pinjaman->sisa_pinjaman_bersih = 0;
+        }
         
         // Simpan data perhitungan ke instance pinjaman untuk dilempar ke view
         $pinjaman->total_tagihan = $totalTagihan;
         $pinjaman->angsuran_per_bulan = $angsuranPerBulan;
         $pinjaman->config = $config;
 
-        // Cari semua transaksi cicilan yang terkait dengan pinjaman ini
-        // kita mencari transaksi simpanan yang berjenis 'cicilan'
-        $cicilans = Simpanan::where('anggota_id', $pinjaman->anggota_id)
-            ->where('jenis_simpanan', 'cicilan')
-            // Mencari Pinjaman ID di dalam kolom deskripsi
-            ->where('deskripsi', 'like', '%' . $pinjaman->id . '%') 
-            ->orderBy('tanggal_simpanan', 'asc')
-            ->get();
+        return view('pinjaman.show', compact('pinjaman', 'payments')); // Menggunakan $payments
+    }
+    
+    /**
+     * Menampilkan form untuk pembayaran cicilan manual.
+     */
+    public function pay(Pinjaman $pinjaman)
+    {
+        if ($pinjaman->status !== 'approved' || $pinjaman->sisa_pinjaman <= 0) {
+            return redirect()->route('pinjaman.show', $pinjaman->id)->with('error', 'Pinjaman tidak valid untuk pembayaran.');
+        }
+        
+        // Hitung total pembayaran yang sudah dilakukan
+        $totalDibayar = Payment::where('pinjaman_id', $pinjaman->id)->sum('total_bayar');
+        $sisaPokok = $pinjaman->jumlah_pinjaman - Payment::where('pinjaman_id', $pinjaman->id)->sum('pokok');
+        $sisaBunga = $pinjaman->bunga - Payment::where('pinjaman_id', $pinjaman->id)->sum('bunga');
+        
+        // Hitung angsuran ideal (pokok + bunga) per bulan
+        $totalTagihan = $pinjaman->jumlah_pinjaman + $pinjaman->bunga;
+        $angsuranPerBulan = round($totalTagihan / $pinjaman->tenor, 2);
 
-        return view('pinjaman.show', compact('pinjaman', 'cicilans'));
+        return view('pinjaman.pay', compact('pinjaman', 'totalDibayar', 'sisaPokok', 'sisaBunga', 'angsuranPerBulan'));
+    }
+    
+    /**
+     * Memproses pembayaran cicilan manual.
+     */
+    public function processPayment(Request $request, Pinjaman $pinjaman)
+    {
+        // 1. Validasi Input
+        $validatedData = $request->validate([
+            'jumlah_bayar' => 'required|numeric|min:1',
+            'tanggal_bayar' => 'required|date',
+            'deskripsi' => 'nullable|string',
+        ]);
+        
+        // Pastikan pinjaman masih memiliki sisa tagihan
+        $totalDibayarSaatIni = Payment::where('pinjaman_id', $pinjaman->id)->sum('total_bayar');
+        $sisaTagihan = $pinjaman->jumlah_pinjaman + $pinjaman->bunga - $totalDibayarSaatIni;
+
+        $jumlahBayar = $validatedData['jumlah_bayar'];
+
+        if ($jumlahBayar > $sisaTagihan) {
+            return back()->withInput()->with('error', 'Jumlah pembayaran melebihi sisa tagihan pinjaman (Rp ' . number_format($sisaTagihan, 2, ',', '.') . ')');
+        }
+
+        DB::beginTransaction();
+
+        try {
+            // 2. Tentukan komponen Pokok dan Bunga yang dibayar
+            // Metode: Flat Rate (Bunga dihitung proporsional dari total bayar)
+            
+            $pokokTotal = $pinjaman->jumlah_pinjaman;
+            $bungaTotal = $pinjaman->bunga;
+            $totalTagihan = $pokokTotal + $bungaTotal;
+
+            // Hitung rasio pembayaran yang dialokasikan ke Pokok dan Bunga
+            $rasioPokok = $pokokTotal / $totalTagihan;
+            $rasioBunga = $bungaTotal / $totalTagihan;
+
+            $pokokDibayar = round($jumlahBayar * $rasioPokok, 2);
+            $bungaDibayar = round($jumlahBayar * $rasioBunga, 2);
+            
+            // Periksa jika ada pembulatan, pastikan totalnya sama
+            if (($pokokDibayar + $bungaDibayar) != $jumlahBayar) {
+                // Sesuaikan bunga agar totalnya tepat
+                $bungaDibayar = $jumlahBayar - $pokokDibayar;
+            }
+            
+            // 3. Catat Transaksi Pembayaran
+            Payment::create([
+                'pinjaman_id' => $pinjaman->id,
+                'anggota_id' => $pinjaman->anggota_id,
+                'pokok' => $pokokDibayar,
+                'bunga' => $bungaDibayar,
+                'total_bayar' => $jumlahBayar,
+                'tanggal_bayar' => $validatedData['tanggal_bayar'],
+                'sumber_pembayaran' => 'Manual (Tunai/Non-Otomatis)',
+                'deskripsi' => $validatedData['deskripsi'] ?? 'Pembayaran cicilan manual.',
+            ]);
+
+            // 4. Update Pinjaman (jumlah_bayar dan status lunas)
+            $pinjaman->increment('jumlah_bayar', $jumlahBayar);
+            
+            // Hitung sisa pinjaman bersih (saldo pinjaman - total bayar)
+            $sisaBersih = $sisaTagihan - $jumlahBayar;
+
+            // Perbarui status jika lunas
+            if ($sisaBersih <= 0) {
+                $pinjaman->status = 'lunas';
+                $pinjaman->sisa_pinjaman = 0; // Pastikan sisa pinjaman menjadi nol
+            } else {
+                 // Perbarui sisa pinjaman (kolom sisa_pinjaman di DB mencatat total bersih)
+                 $pinjaman->sisa_pinjaman = $pinjaman->sisa_pinjaman - $jumlahBayar;
+            }
+            $pinjaman->save(); 
+            
+            DB::commit();
+
+            if ($sisaBersih <= 0) {
+                return redirect()->route('pinjaman.show', $pinjaman->id)->with('success', 'Cicilan lunas! Pinjaman berhasil ditutup.');
+            } else {
+                return redirect()->route('pinjaman.show', $pinjaman->id)->with('success', 'Pembayaran cicilan Rp ' . number_format($jumlahBayar, 2, ',', '.') . ' berhasil dicatat.');
+            }
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Illuminate\Support\Facades\Log::error('Manual payment failed: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Gagal memproses pembayaran: ' . $e->getMessage());
+        }
     }
 }
