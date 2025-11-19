@@ -6,34 +6,27 @@ use App\Models\Anggota;
 use App\Models\Simpanan;
 use App\Models\Pinjaman;
 use App\Models\Payment;
-use App\Models\GeneralTransaction; // IMPORT MODEL BARU
+use App\Models\GeneralTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class LaporanController extends Controller
 {
-    // Konfigurasi Jenis Pinjaman dan Bunga/Admin (Disinkronkan dari PinjamanController)
     protected $loanTypes = [
         'uang_jk_panjang' => ['label' => 'Pinjaman Uang JK Panjang', 'bunga' => 0.01, 'admin' => 0.015],
         'sebrak' => ['label' => 'Pinjaman Sebrak', 'bunga' => 0.02, 'admin' => 0.015],
         'piutang_barang' => ['label' => 'Piutang Barang', 'bunga' => 0.015, 'admin' => 0.015],
     ];
 
-    /**
-     * Menampilkan halaman indeks laporan.
-     */
     public function index()
     {
         return view('laporan.index');
     }
     
-    /**
-     * Menampilkan Laporan Neraca.
-     */
     public function neraca()
     {
-        // --- 1. HITUNG LIABILITAS (KEWAJIBAN KOPERASI KEPADA ANGGOTA) ---
+        // ... (Metode Neraca tetap seperti sebelumnya) ...
         $totalSimpananAnggota = Anggota::sum('saldo_pokok') + 
                                   Anggota::sum('saldo_wajib') + 
                                   Anggota::sum('saldo_wajib_khusus') + 
@@ -43,7 +36,6 @@ class LaporanController extends Controller
 
         $totalVoucher = Anggota::sum('voucher');
         
-        // --- 2. HITUNG ASET (PIUTANG PINJAMAN) ---
         $pinjamans = Pinjaman::whereIn('status', ['approved'])
                              ->with('payments')
                              ->get();
@@ -51,30 +43,22 @@ class LaporanController extends Controller
         $totalPiutangPinjaman = $pinjamans->sum(function ($pinjaman) {
             $totalTagihanBersih = $pinjaman->jumlah_pinjaman + $pinjaman->bunga;
             $totalDibayar = $pinjaman->payments->sum('total_bayar');
-            // Hanya menghitung sisa tagihan yang masih harus dibayar
             return max(0, $totalTagihanBersih - $totalDibayar);
         });
 
-        // --- 3. HITUNG SALDO KAS (ASET LANCAR) ---
-        
-        // Pemasukan: Simpanan Anggota + Angsuran Pokok + Bunga + Pemasukan Umum
-        $totalPemasukanSimpanan = Simpanan::sum('jumlah_simpanan'); // Termasuk Pokok, Wajib, Voucher Income
-        $totalPemasukanPinjaman = Payment::sum('total_bayar'); // Total Angsuran Diterima
-        $totalPemasukanUmum = GeneralTransaction::where('type', 'in')->sum('amount'); // Transaksi Operasional
+        $totalPemasukanSimpanan = Simpanan::sum('jumlah_simpanan'); 
+        $totalPemasukanPinjaman = Payment::sum('total_bayar'); 
+        $totalPemasukanUmum = GeneralTransaction::where('type', 'in')->sum('amount');
         
         $totalKasMasuk = $totalPemasukanSimpanan + $totalPemasukanPinjaman + $totalPemasukanUmum;
 
-        // Pengeluaran: Biaya Admin Pinjaman (dianggap dikeluarkan/dipotong dari kas saat pinjaman disetujui) + Pengeluaran Umum
-        // Catatan: Simpanan Pokok yang dipinjamkan anggota (jumlah_pinjaman) tidak dihitung sebagai pengeluaran kas, karena itu adalah aset piutang.
         $totalPengeluaranAdmin = Pinjaman::sum('biaya_admin');
-        $totalPengeluaranUmum = GeneralTransaction::where('type', 'out')->sum('amount'); // Transaksi Operasional
+        $totalPengeluaranUmum = GeneralTransaction::where('type', 'out')->sum('amount');
         
         $totalKasKeluar = $totalPengeluaranAdmin + $totalPengeluaranUmum;
         
         $saldoKas = $totalKasMasuk - $totalKasKeluar;
 
-        // --- 4. HITUNG EKUITAS (SHU) ---
-        // SHU = (Pendapatan Bunga + Pendapatan Voucher + Pendapatan Umum) - Biaya Operasional
         $totalBungaDiterima = Payment::sum('bunga');
         $totalPendapatanVoucher = Simpanan::where('jenis_simpanan', 'voucher_income')->sum('jumlah_simpanan');
         $totalPendapatanUmum = GeneralTransaction::where('type', 'in')->sum('amount');
@@ -83,20 +67,15 @@ class LaporanController extends Controller
         
         $totalPendapatanKotor = $totalBungaDiterima + $totalPendapatanVoucher + $totalPendapatanUmum;
         
-        // SHU Akrual (Laba Bersih Sederhana)
         $shu = $totalPendapatanKotor - $totalBiayaOperasional;
         
-        // --- 5. FINALISASI NERACA ---
-
         $totalAset = $totalPiutangPinjaman + $saldoKas;
         $totalLiabilitasEkuitas = $totalSimpananAnggota + $totalVoucher + $shu; 
         
-        // Catatan Penting: Saldo Kas dan SHU dihitung secara terpisah. Neraca harus seimbang (Total Aset = Total Liabilitas + Ekuitas).
-        // Perbedaan $totalAset dan $totalLiabilitasEkuitas yang idealnya nol menunjukkan konsistensi data.
 
         $neracaData = [
             'aset' => [
-                'Saldo Kas & Bank' => $saldoKas, // Aset Fisik Uang
+                'Saldo Kas & Bank' => $saldoKas, 
                 'Piutang Pinjaman' => $totalPiutangPinjaman,
             ],
             'liabilitas_ekuitas' => [
@@ -106,17 +85,15 @@ class LaporanController extends Controller
             ],
             'total_aset' => $totalAset,
             'total_liabilitas_ekuitas' => $totalLiabilitasEkuitas,
-            'balance_check' => $totalAset - $totalLiabilitasEkuitas, // Idealnya harus 0
+            'balance_check' => $totalAset - $totalLiabilitasEkuitas,
         ];
 
         return view('laporan.neraca', compact('neracaData'));
     }
 
-    /**
-     * Menampilkan Laporan Saldo Simpanan per Anggota.
-     */
     public function simpanan()
     {
+        // ... (metode simpanan() yang sudah ada) ...
         $anggotas = Anggota::with('user')->get();
 
         // Siapkan data laporan
@@ -160,7 +137,7 @@ class LaporanController extends Controller
     
     public function pinjaman()
     {
-        // Ambil semua pinjaman yang berstatus 'approved' atau 'pending'
+        // ... (metode pinjaman() yang sudah ada) ...
         $pinjamans = Pinjaman::whereIn('status', ['approved'])
                              ->with('anggota', 'payments')
                              ->get();
@@ -192,7 +169,7 @@ class LaporanController extends Controller
 
             return [
                 'id' => $pinjaman->id,
-                'anggota_nama' => $pinjaman->anggota->nama_lengkap ?? 'N/A',
+                'anggota_nama' => $pinjaman->anggota?->nama_lengkap ?? 'N/A',
                 'loan_type' => ucwords(str_replace('_', ' ', $pinjaman->loan_type)),
                 'tenor' => $pinjaman->tenor,
                 'pokok_pinjaman' => $pinjaman->jumlah_pinjaman,
@@ -281,6 +258,17 @@ class LaporanController extends Controller
                 'deskripsi' => "Bunga Angsuran Pinjaman #{$payment->pinjaman_id} ({$anggotaNamaPinjaman})",
                 'jumlah' => $payment->bunga,
             ];
+            
+            // PERBAIKAN: Biaya Admin dicatat sebagai PEMASUKAN di sini (bukan pengeluaran)
+            if ($pinjaman && $pinjaman->biaya_admin > 0 && $pinjaman->tanggal_pengajuan >= $start_date && $pinjaman->tanggal_pengajuan <= $end_date) {
+                 $pemasukan[] = [
+                    'tanggal' => $pinjaman->tanggal_pengajuan,
+                    'jenis' => 'Pemasukan',
+                    'kategori' => 'Penerimaan Biaya Administrasi',
+                    'deskripsi' => "Biaya Admin Pinjaman #{$pinjaman->id} ({$anggotaNamaPinjaman})",
+                    'jumlah' => $pinjaman->biaya_admin,
+                ];
+            }
         }
 
         // 2C. Pemasukan dari Transaksi Operasional Umum (BARU)
@@ -301,25 +289,25 @@ class LaporanController extends Controller
         // 3. Kumpulkan Transaksi PENGELUARAN
         $pengeluaran = [];
         
-        // 3A. Pengeluaran: Potongan Biaya Admin Pinjaman 
-        $pinjamanAdmin = Pinjaman::where('status', 'approved')
+        // PERBAIKAN KRITIS 1: PENGELUARAN POKOK PINJAMAN KE ANGGOTA
+        $pinjamanOut = Pinjaman::where('status', 'approved')
                                  ->whereBetween('tanggal_pengajuan', [$start_date, $end_date])
-                                 ->where('biaya_admin', '>', 0)
+                                 ->where('jumlah_pinjaman', '>', 0)
                                  ->with('anggota') 
                                  ->get();
 
-        foreach ($pinjamanAdmin as $pinjaman) {
-            $anggotaNamaAdmin = $pinjaman->anggota?->nama_lengkap ?? 'Anggota Dihapus';
+        foreach ($pinjamanOut as $pinjaman) {
+            $anggotaNama = $pinjaman->anggota?->nama_lengkap ?? 'Anggota Dihapus';
 
              $pengeluaran[] = [
                 'tanggal' => $pinjaman->tanggal_pengajuan,
                 'jenis' => 'Pengeluaran',
-                'kategori' => 'Biaya Administrasi Pinjaman',
-                'deskripsi' => "Pencatatan Biaya Admin Pinjaman #{$pinjaman->id} ({$anggotaNamaAdmin})",
-                'jumlah' => $pinjaman->biaya_admin,
+                'kategori' => 'Pencairan Pokok Pinjaman',
+                'deskripsi' => "Pencairan Pokok Pinjaman #{$pinjaman->id} ({$anggotaNama})",
+                'jumlah' => $pinjaman->jumlah_pinjaman,
             ];
         }
-
+        
         // 3B. Pengeluaran dari Transaksi Operasional Umum (BARU)
         $generalOut = GeneralTransaction::where('type', 'out')
                                         ->whereBetween('transaction_date', [$start_date, $end_date])
