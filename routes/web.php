@@ -36,6 +36,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/pinjaman/{pinjaman}/pay', [PinjamanController::class, 'pay'])->name('pinjaman.pay');
     Route::post('/pinjaman/{pinjaman}/process-payment', [PinjamanController::class, 'processPayment'])->name('pinjaman.process_payment');
 
+    Route::resource('general_transactions', GeneralTransactionController::class);
+
     // Rute Tutup Bulan (Closing) - Menggunakan method 'process' yang sudah kita buat
     Route::get('/tutup-bulan', [ClosingController::class, 'index'])->name('closing.index');
     Route::post('/tutup-bulan', [ClosingController::class, 'process'])->name('closing.process');

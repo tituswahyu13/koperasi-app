@@ -33,6 +33,16 @@
             </svg>
             <span :class="{'hidden': !sidebarOpen, 'flex': sidebarOpen}" class="ml-3 transition-all duration-300 ease-in-out whitespace-nowrap overflow-hidden">Manajemen Pinjaman</span>
         </a>
+
+        {{-- LINK BARU: Jurnal Umum Operasional --}}
+        <a href="{{ route('general_transactions.index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-700 transition duration-200">
+            <svg class="h-5 w-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10h-6M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+            </svg>
+            <span :class="{'hidden': !sidebarOpen, 'flex': sidebarOpen}" class="ml-3 transition-all duration-300 ease-in-out whitespace-nowrap overflow-hidden">Jurnal Umum Operasional</span>
+        </a>
+        {{-- END LINK BARU --}}
+
         <a href="{{ route('closing.index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-700 transition duration-200">
             <svg class="h-5 w-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h.01M17 11h.01M12 7v4m0 0v4m0-4h4m-4 0h-4m4 0h4m-4 0h-4M7 16h.01M17 16h.01M12 16h.01"></path>
