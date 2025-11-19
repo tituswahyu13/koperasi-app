@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AnggotaController;
 use App\Http\Controllers\SimpananController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\GeneralTransactionController;
 use App\Http\Controllers\ClosingController;
 use App\Http\Controllers\PinjamanController;
 use App\Http\Controllers\SimulasiController;
