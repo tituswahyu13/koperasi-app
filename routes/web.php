@@ -47,6 +47,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/laporan/simpanan', [LaporanController::class, 'simpanan'])->name('laporan.simpanan');
     Route::get('/laporan/pinjaman', [LaporanController::class, 'pinjaman'])->name('laporan.pinjaman');
     Route::get('/laporan/arus-kas', [LaporanController::class, 'arusKas'])->name('laporan.arus-kas');
+    Route::get('/laporan/neraca', [LaporanController::class, 'neraca'])->name('laporan.neraca');
 });
 
 require __DIR__ . '/auth.php';

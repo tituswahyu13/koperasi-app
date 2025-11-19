@@ -19,6 +19,9 @@
                         <a href="{{ route('laporan.arus-kas') }}" class="block p-4 rounded-lg bg-indigo-100 text-indigo-800 hover:bg-indigo-200 transition">
                             Laporan Arus Kas
                         </a>
+                        <a href="{{ route('laporan.neraca') }}" class="block p-4 rounded-lg bg-red-100 text-red-800 hover:bg-red-200 transition">
+                            Laporan Neraca
+                        </a>
                     </div>
                 </div>
             </div>
