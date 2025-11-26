@@ -6,6 +6,7 @@ use App\Models\Anggota;
 use App\Models\Simpanan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB; 
+use Illuminate\Support\Collection; // WAJIB DI-IMPORT JIKA MENGGUNAKAN COLLECTION/ARRAY
 
 class SimpananController extends Controller
 {
@@ -41,6 +42,7 @@ class SimpananController extends Controller
 
     public function store(Request $request)
     {
+        // ... (Metode store tetap sama) ...
         $validatedData = $request->validate([
             'anggota_id' => 'required|exists:anggotas,id',
             'jumlah_simpanan' => 'required|numeric|min:1', 
@@ -74,12 +76,26 @@ class SimpananController extends Controller
 
     public function withdraw()
     {
-        $anggotas = Anggota::orderBy('nama_lengkap')->get();
+        // PERBAIKAN: Mengambil data saldo yang dibutuhkan oleh JavaScript
+        $anggotas = Anggota::orderBy('nama_lengkap')->get([
+            'id', 
+            'nama_lengkap', 
+            'saldo_manasuka', 
+            'saldo_mandiri', 
+            'saldo_jasa_anggota',
+            'user_id' // Untuk menampilkan username jika diperlukan
+        ]);
+
+        // Muat user relationship untuk nama/username yang lebih detail
+        $anggotas->load('user');
+        
+        // Kirim data anggota dan saldonya ke view
         return view('simpanan.withdraw', compact('anggotas'));
     }
     
     public function processWithdrawal(Request $request)
     {
+        // ... (Metode processWithdrawal tetap sama) ...
         $validatedData = $request->validate([
             'anggota_id' => 'required|exists:anggotas,id',
             'jumlah_penarikan' => 'required|numeric|min:1', 
@@ -126,21 +142,14 @@ class SimpananController extends Controller
         }
     }
     
-    // --- FITUR BARU: PENARIKAN SIMPANAN MASSAL (MANASUKA) ---
+    // --- FITUR PENARIKAN SIMPANAN MASSAL (MANASUKA - TARIK PENUH) ---
     
-    /**
-     * Menampilkan form untuk penarikan massal (Manasuka).
-     */
     public function massWithdraw()
     {
-        // Hitung total saldo manasuka anggota yang aktif
         $totalManasuka = Anggota::where('status_aktif', 1)->sum('saldo_manasuka');
         return view('simpanan.mass_withdraw', compact('totalManasuka'));
     }
     
-    /**
-     * Memproses penarikan massal seluruh saldo Manasuka.
-     */
     public function processMassWithdrawal(Request $request)
     {
         // VALIDASI DIPERBAIKI: Hanya butuh tanggal dan deskripsi
@@ -150,7 +159,7 @@ class SimpananController extends Controller
         ]);
         
         $tanggalPenarikan = $validatedData['tanggal_penarikan'];
-        $deskripsi = $validatedData['deskripsi'] ?? "Penarikan Seluruh Saldo Manasuka Massal.";
+        $deskripsi = $validatedData['deskripsi'] ?? "Penarikan Seluruh Saldo Manasuka Massal Hari Raya.";
         
         // Ambil semua anggota aktif yang memiliki saldo manasuka > 0
         $anggotas = Anggota::where('status_aktif', 1)
@@ -167,23 +176,20 @@ class SimpananController extends Controller
         DB::beginTransaction();
         try {
             foreach ($anggotas as $anggota) {
-                $amountToWithdraw = $anggota->saldo_manasuka; // Tarik SELURUH saldo
+                $amountToWithdraw = $anggota->saldo_manasuka; 
                 
                 $kolom_saldo = 'saldo_manasuka';
                 $jenisTransaksi = 'penarikan_manasuka_massal';
                 
-                // 1. Catat Transaksi Penarikan (Kas Keluar)
                 Simpanan::create([
                     'anggota_id' => $anggota->id,
-                    'jumlah_simpanan' => -$amountToWithdraw, // Dicatat sebagai nilai NEGATIF
+                    'jumlah_simpanan' => -$amountToWithdraw, 
                     'jenis_simpanan' => $jenisTransaksi,
                     'deskripsi' => $deskripsi,
                     'tanggal_simpanan' => $tanggalPenarikan,
                 ]);
 
-                // 2. Kurangi Saldo Anggota dan SETEL KE NOL
                 $anggota->decrement($kolom_saldo, $amountToWithdraw); 
-                $anggota->save(); // Penting untuk menyimpan perubahan saldo ke 0
 
                 $totalAnggotaDiproses++;
                 $totalAmountWithdrawn += $amountToWithdraw;
@@ -201,7 +207,18 @@ class SimpananController extends Controller
     }
 
 
-    // ... (Metode update dan destroy tetap sama) ...
+    public function show(Simpanan $simpanan)
+    {
+        $simpanan->load('anggota');
+        return view('simpanan.show', compact('simpanan'));
+    }
+
+    public function edit(Simpanan $simpanan)
+    {
+        $anggotas = Anggota::orderBy('nama_lengkap')->get();
+        return view('simpanan.edit', compact('simpanan', 'anggotas'));
+    }
+
     public function update(Request $request, Simpanan $simpanan)
     {
         // Validasi harus mencakup semua jenis transaksi (setoran dan penarikan yang dicatat)
@@ -226,13 +243,11 @@ class SimpananController extends Controller
             $jumlahBaru = $validatedData['jumlah_simpanan'];
             $jenisBaru = $validatedData['jenis_simpanan'];
 
-            // 1. Kurangi saldo lama (kembalikan saldo ke kondisi sebelum transaksi lama)
             $kolomLama = $this->getSaldoColumn($jenisLama);
             if ($anggotaLama && $kolomLama) {
                 $anggotaLama->decrement($kolomLama, $jumlahLama);
             }
 
-            // 2. Tambahkan saldo baru (terapkan saldo dari transaksi baru)
             $kolomBaru = $this->getSaldoColumn($jenisBaru);
             if ($anggotaBaru && $kolomBaru) {
                 $anggotaBaru->increment($kolomBaru, $jumlahBaru);
@@ -257,11 +272,9 @@ class SimpananController extends Controller
             
             $jumlahTransaksi = $simpanan->jumlah_simpanan; 
             
-            // HANYA izinkan penghapusan untuk transaksi yang dicatat secara manual
             if (str_starts_with($jenisSimpanan, 'penarikan_') || in_array($jenisSimpanan, ['mandiri', 'jasa_anggota', 'manasuka'])) {
                 
                 if ($anggota && $kolom_saldo) {
-                    // Logika undo: Jika transaksi adalah setoran (+), lakukan decrement (-). Jika penarikan (-), lakukan increment (+).
                     $anggota->decrement($kolom_saldo, $jumlahTransaksi);
                 }
 

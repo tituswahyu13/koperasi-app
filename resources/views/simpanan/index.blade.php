@@ -29,8 +29,11 @@
                         {{-- Tombol Catat Setoran --}}
                         <a href="{{ route('simpanan.create') }}" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md shadow-sm transition">Catat Setoran Baru</a>
                         
-                        {{-- Tombol Catat Penarikan (Withdraw) --}}
-                        <a href="{{ route('simpanan.withdraw') }}" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md shadow-sm transition">Catat Penarikan</a>
+                        {{-- Tombol Catat Penarikan Individu --}}
+                        <a href="{{ route('simpanan.withdraw') }}" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md shadow-sm transition">Catat Penarikan (Individu)</a>
+
+                        {{-- TOMBOL BARU: Penarikan Massal --}}
+                        <a href="{{ route('simpanan.mass_withdraw') }}" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-md shadow-sm transition">Penarikan Massal Manasuka</a>
                     </div>
 
 
@@ -69,7 +72,7 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r">{{ $simpanan->deskripsi ?? '-' }}</td>
                                     
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
-                                        {{-- Cek apakah jenis simpanan termasuk yang bisa diedit/dihapus secara manual --}}
+                                        {{-- Hanya izinkan edit/hapus untuk transaksi yang bukan otomatis --}}
                                         @if (in_array($simpanan->jenis_simpanan, ['mandiri', 'jasa_anggota', 'penarikan_manasuka', 'penarikan_mandiri', 'penarikan_jasa_anggota']))
                                             <a href="{{ route('simpanan.edit', $simpanan->id) }}" class="text-indigo-600 hover:text-indigo-900">Edit</a>
                                             <form action="{{ route('simpanan.destroy', $simpanan->id) }}" method="POST" class="inline ml-4">
