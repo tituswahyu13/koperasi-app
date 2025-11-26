@@ -30,6 +30,9 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('anggota', AnggotaController::class);
     Route::resource('simpanan', SimpananController::class);
+    Route::get('/simpanan/withdraw', [SimpananController::class, 'withdraw'])->name('simpanan.withdraw');
+    Route::post('/simpanan/withdraw', [SimpananController::class, 'processWithdrawal'])->name('simpanan.process_withdrawal');
+    
     
     // Rute Pinjaman
     Route::resource('pinjaman', PinjamanController::class);

@@ -25,7 +25,14 @@
                     </div>
                     @endif
 
-                    <a href="{{ route('simpanan.create') }}" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md shadow-sm transition">Catat Simpanan Baru</a>
+                    <div class="flex space-x-3 mb-6">
+                        {{-- Tombol Catat Setoran --}}
+                        <a href="{{ route('simpanan.create') }}" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md shadow-sm transition">Catat Setoran Baru</a>
+                        
+                        {{-- Tombol Catat Penarikan (Withdraw) --}}
+                        <a href="{{ route('simpanan.withdraw') }}" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md shadow-sm transition">Catat Penarikan</a>
+                    </div>
+
 
                     <div class="overflow-x-auto mt-6 rounded-lg border">
                         <table class="min-w-full divide-y divide-gray-200">
@@ -49,18 +56,26 @@
                                         {{ ucwords(str_replace('_', ' ', $simpanan->jenis_simpanan)) }}
                                     </td>
                                     
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-800 border-r text-right">Rp {{ number_format($simpanan->jumlah_simpanan, 2, ',', '.') }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold border-r text-right 
+                                        @if ($simpanan->jumlah_simpanan < 0) 
+                                            text-red-600 
+                                        @else 
+                                            text-green-600 
+                                        @endif"
+                                    >
+                                        Rp {{ number_format(abs($simpanan->jumlah_simpanan), 2, ',', '.') }}
+                                    </td>
                                     
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r">{{ $simpanan->deskripsi ?? '-' }}</td>
                                     
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
                                         {{-- Cek apakah jenis simpanan termasuk yang bisa diedit/dihapus secara manual --}}
-                                        @if (in_array($simpanan->jenis_simpanan, ['mandiri', 'jasa_anggota']))
+                                        @if (in_array($simpanan->jenis_simpanan, ['mandiri', 'jasa_anggota', 'penarikan_manasuka', 'penarikan_mandiri', 'penarikan_jasa_anggota']))
                                             <a href="{{ route('simpanan.edit', $simpanan->id) }}" class="text-indigo-600 hover:text-indigo-900">Edit</a>
                                             <form action="{{ route('simpanan.destroy', $simpanan->id) }}" method="POST" class="inline ml-4">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('Apakah Anda yakin ingin menghapus transaksi ini? Saldo anggota akan dikurangi.')">Hapus</button>
+                                                <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('Apakah Anda yakin ingin menghapus transaksi ini? Saldo anggota akan dikoreksi.')">Hapus</button>
                                             </form>
                                         @else
                                             <span class="text-gray-400 text-xs">Otomatis</span>

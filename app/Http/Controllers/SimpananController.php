@@ -40,17 +40,12 @@ class SimpananController extends Controller
             // 2. Perbarui saldo Anggota
             $anggota = Anggota::find($validatedData['anggota_id']);
             if ($anggota) {
-                $kolom_saldo = '';
+                $kolom_saldo = match($validatedData['jenis_simpanan']) {
+                    'mandiri' => 'saldo_mandiri',
+                    'jasa_anggota' => 'saldo_jasa_anggota',
+                    default => null,
+                };
                 
-                switch ($validatedData['jenis_simpanan']) {
-                    case 'mandiri':
-                        $kolom_saldo = 'saldo_mandiri';
-                        break;
-                    case 'jasa_anggota':
-                        $kolom_saldo = 'saldo_jasa_anggota';
-                        break;
-                }
-
                 if ($kolom_saldo) {
                     // Gunakan increment() untuk menambahkan saldo
                     $anggota->increment($kolom_saldo, $validatedData['jumlah_simpanan']);
@@ -68,6 +63,83 @@ class SimpananController extends Controller
             return back()->withInput()->with('error', 'Gagal mencatat simpanan: ' . $e->getMessage());
         }
     }
+    
+    // --- FITUR BARU: PENARIKAN SIMPANAN (HANYA MANASUKA DAN JASA ANGGOTA) ---
+
+    /**
+     * Menampilkan form untuk penarikan simpanan.
+     */
+    public function withdraw()
+    {
+        // Penarikan manasuka (bisa dilakukan kapan saja) dan jasa anggota
+        $anggotas = Anggota::orderBy('nama_lengkap')->get();
+        return view('simpanan.withdraw', compact('anggotas'));
+    }
+    
+    /**
+     * Memproses penarikan simpanan.
+     */
+    public function processWithdrawal(Request $request)
+    {
+        // Validasi: hanya penarikan Mandiri dan Jasa Anggota yang diizinkan
+        $validatedData = $request->validate([
+            'anggota_id' => 'required|exists:anggotas,id',
+            'jumlah_penarikan' => 'required|numeric|min:1', 
+            // Penarikan hanya diizinkan untuk saldo yang non-wajib
+            'jenis_simpanan' => 'required|string|in:manasuka,mandiri,jasa_anggota', 
+            'deskripsi' => 'nullable|string',
+            'tanggal_simpanan' => 'required|date',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $anggota = Anggota::find($validatedData['anggota_id']);
+            $jumlahPenarikan = $validatedData['jumlah_penarikan'];
+            $jenisSimpanan = $validatedData['jenis_simpanan'];
+
+            $kolom_saldo = match($jenisSimpanan) {
+                'manasuka' => 'saldo_manasuka',
+                'mandiri' => 'saldo_mandiri',
+                'jasa_anggota' => 'saldo_jasa_anggota',
+                default => null,
+            };
+
+            if (!$anggota || !$kolom_saldo) {
+                 throw new \Exception("Anggota atau jenis simpanan tidak valid.");
+            }
+            
+            // 1. Cek Saldo Mencukupi
+            if ($anggota->$kolom_saldo < $jumlahPenarikan) {
+                DB::rollBack();
+                return back()->withInput()->with('error', "Penarikan GAGAL. Saldo {$kolom_saldo} anggota tidak mencukupi (Saldo saat ini: Rp " . number_format($anggota->$kolom_saldo, 2, ',', '.') . ").");
+            }
+
+            // 2. Catat Transaksi Penarikan 
+            // Kita menggunakan nilai negatif untuk membedakan di tabel simpanans
+            $jenisTransaksi = 'penarikan_' . $jenisSimpanan;
+            
+            Simpanan::create([
+                'anggota_id' => $anggota->id,
+                'jumlah_simpanan' => -$jumlahPenarikan, // Dicatat sebagai nilai negatif (Kas Keluar)
+                'jenis_simpanan' => $jenisTransaksi,
+                'deskripsi' => $validatedData['deskripsi'] ?? "Penarikan {$jenisSimpanan}",
+                'tanggal_simpanan' => $validatedData['tanggal_simpanan'],
+            ]);
+
+            // 3. Kurangi Saldo Anggota
+            $anggota->decrement($kolom_saldo, $jumlahPenarikan);
+
+            DB::commit();
+            return redirect()->route('simpanan.index')->with('success', 'Penarikan simpanan berhasil dicatat!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withInput()->with('error', 'Gagal memproses penarikan: ' . $e->getMessage());
+        }
+    }
+
+
+    // ... (show, edit, update, destroy methods remains the same) ...
 
     public function show(Simpanan $simpanan)
     {
@@ -154,22 +226,31 @@ class SimpananController extends Controller
 
         try {
             $anggota = Anggota::find($simpanan->anggota_id);
+            
             $kolom_saldo = match($simpanan->jenis_simpanan) {
-                'mandiri' => 'saldo_mandiri',
-                'jasa_anggota' => 'saldo_jasa_anggota',
+                'mandiri', 'penarikan_mandiri' => 'saldo_mandiri',
+                'jasa_anggota', 'penarikan_jasa_anggota' => 'saldo_jasa_anggota',
                 default => null,
             };
+            
+            $jumlahTransaksi = abs($simpanan->jumlah_simpanan); // Gunakan nilai absolut
 
             if ($anggota && $kolom_saldo) {
-                // Pastikan saldo tidak menjadi minus
-                if ($anggota->$kolom_saldo < $simpanan->jumlah_simpanan) {
-                    throw new \Exception("Penghapusan transaksi ini akan menyebabkan saldo " . $simpanan->jenis_simpanan . " menjadi minus.");
+                
+                // Jika ini adalah setoran (jumlah_simpanan > 0), kembalikan saldo dengan decrement
+                if ($simpanan->jumlah_simpanan > 0) {
+                    if ($anggota->$kolom_saldo < $jumlahTransaksi) {
+                        throw new \Exception("Penghapusan setoran ini akan menyebabkan saldo minus.");
+                    }
+                    $anggota->decrement($kolom_saldo, $jumlahTransaksi);
+                } 
+                // Jika ini adalah penarikan (jumlah_simpanan < 0), kembalikan saldo dengan increment
+                elseif ($simpanan->jumlah_simpanan < 0) {
+                    $anggota->increment($kolom_saldo, $jumlahTransaksi);
                 }
-
-                $anggota->decrement($kolom_saldo, $simpanan->jumlah_simpanan);
-            } elseif (!$kolom_saldo) {
-                // Ini untuk mencegah penghapusan transaksi yang dibuat oleh sistem (wajib, wajib_khusus)
-                throw new \Exception("Jenis simpanan ini tidak dapat dihapus secara manual (hanya Mandiri/Jasa Anggota).");
+            } else {
+                // Ini untuk mencegah penghapusan transaksi wajib dan pokok
+                throw new \Exception("Jenis simpanan ini tidak dapat dihapus secara manual.");
             }
             
             $simpanan->delete();
