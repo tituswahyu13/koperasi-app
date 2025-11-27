@@ -3,70 +3,81 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Carbon\Carbon;
 
 class SimulasiController extends Controller
 {
+    // Konfigurasi Jenis Pinjaman dan Bunga/Admin (Sama seperti PinjamanController)
+    protected $loanTypes = [
+        'uang_jk_panjang' => ['label' => 'Pinjaman Uang JK Panjang', 'bunga' => 0.01, 'admin' => 0.015],
+        'sebrak' => ['label' => 'Pinjaman Sebrak', 'bunga' => 0.02, 'admin' => 0.015],
+        'piutang_barang' => ['label' => 'Piutang Barang', 'bunga' => 0.015, 'admin' => 0.015],
+    ];
+
     /**
      * Menampilkan form simulasi pinjaman.
      */
     public function index()
     {
-        return view('simulasi.index');
+        $loanTypes = $this->loanTypes;
+        $results = null;
+        return view('simulasi.index', compact('loanTypes', 'results'));
     }
 
     /**
-     * Menghitung dan menampilkan tabel angsuran.
-     */
-    /**
-     * Menghitung dan menampilkan tabel angsuran.
+     * Memproses perhitungan simulasi pinjaman.
      */
     public function calculate(Request $request)
     {
+        // 1. Validasi Input
+        $validLoanKeys = array_keys($this->loanTypes);
+
         $validatedData = $request->validate([
             'jumlah_pinjaman' => 'required|numeric|min:100000',
-            'jenis_pinjaman' => 'required|string|in:uang,barang',
-            'tenor' => 'required|numeric|min:1',
+            'tenor' => 'required|numeric|min:1|max:120',
+            'loan_type' => 'required|string|in:' . implode(',', $validLoanKeys),
         ]);
-
+        
         $jumlahPinjaman = $validatedData['jumlah_pinjaman'];
         $tenor = $validatedData['tenor'];
-        $jenisPinjaman = $validatedData['jenis_pinjaman'];
+        $config = $this->loanTypes[$validatedData['loan_type']];
 
-        // Menentukan bunga berdasarkan jenis pinjaman
-        $bungaRate = $jenisPinjaman === 'uang' ? 0.01 : 0.015;
-        $bungaPerBulan = $jumlahPinjaman * $bungaRate;
-        $totalBunga = $bungaPerBulan * $tenor;
-        $totalPinjaman = $jumlahPinjaman + $totalBunga;
-        $cicilanTotal = $totalPinjaman / $tenor;
-        $cicilanPokok = $jumlahPinjaman / $tenor;
+        // --- 2. PERHITUNGAN ---
 
-        $jadwalAngsuran = [];
-        $sisaPokok = $jumlahPinjaman;
-
-        for ($i = 1; $i <= $tenor; $i++) {
-            $tanggalJatuhTempo = Carbon::now()->addMonths($i);
-            $sisaPokok -= $cicilanPokok;
-            $jadwalAngsuran[] = [
-                'bulan' => $i,
-                'tanggal_jatuh_tempo' => $tanggalJatuhTempo->format('Y-m-d'),
-                'cicilan_pokok' => $cicilanPokok,
-                'bunga_angsuran' => $bungaPerBulan,
-                'cicilan_total' => $cicilanTotal,
-                'sisa_pokok' => $sisaPokok > 0 ? $sisaPokok : 0,
-            ];
+        // Bunga Total = Pokok Pinjaman * Bunga Rate per bulan * Tenor
+        $bungaTotal = $jumlahPinjaman * $config['bunga'] * $tenor;
+        
+        // Biaya Administrasi = Pokok Pinjaman * Admin Rate
+        $biayaAdmin = $jumlahPinjaman * $config['admin'];
+        
+        // Total Tagihan (Pokok + Bunga)
+        $totalTagihan = $jumlahPinjaman + $bungaTotal;
+        
+        // Angsuran Bulanan = Total Tagihan / Tenor
+        $angsuranPerBulan = round($totalTagihan / $tenor, 2);
+        
+        // Potongan Wajib Pinjam (1% dari Pokok Pinjaman)
+        $potonganWajibPinjam = 0;
+        if ($validatedData['loan_type'] === 'uang_jk_panjang') {
+            $potonganWajibPinjam = $jumlahPinjaman * 0.01;
         }
 
-        return view('simulasi.index', compact(
-            'jumlahPinjaman',
-            'tenor',
-            'jenisPinjaman',
-            'bungaRate',
-            'totalBunga',
-            'totalPinjaman',
-            'cicilanPokok',
-            'cicilanTotal',
-            'jadwalAngsuran'
-        ));
+        // Uang Bersih yang Diterima Anggota = Pokok Pinjaman - Biaya Admin - Potongan Wajib Pinjam
+        $uangDiterima = $jumlahPinjaman - $biayaAdmin - $potonganWajibPinjam;
+        
+        // --- 3. SIAPKAN HASIL ---
+
+        $results = [
+            'input' => $validatedData,
+            'bunga_total' => $bungaTotal,
+            'biaya_admin' => $biayaAdmin,
+            'potongan_wajib_pinjam' => $potonganWajibPinjam,
+            'total_tagihan' => $totalTagihan,
+            'angsuran_per_bulan' => $angsuranPerBulan,
+            'uang_diterima' => $uangDiterima,
+            'config_label' => $config['label'],
+        ];
+
+        $loanTypes = $this->loanTypes;
+        return view('simulasi.index', compact('loanTypes', 'results'));
     }
 }
