@@ -9,6 +9,7 @@ use App\Http\Controllers\ClosingController;
 use App\Http\Controllers\PinjamanController;
 use App\Http\Controllers\SimulasiController;
 use App\Http\Controllers\LaporanController;
+use App\Http\Controllers\RoleController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -18,7 +19,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('login');
 });
 
 Route::middleware('auth')->group(function () {
@@ -63,6 +64,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/laporan/pinjaman', [LaporanController::class, 'pinjaman'])->name('laporan.pinjaman');
     Route::get('/laporan/arus-kas', [LaporanController::class, 'arusKas'])->name('laporan.arus-kas');
     Route::get('/laporan/neraca', [LaporanController::class, 'neraca'])->name('laporan.neraca');
+
+    // Manajemen Akses (Role & Permission)
+    Route::resource('roles', RoleController::class);
 });
+
 
 require __DIR__ . '/auth.php';

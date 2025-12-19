@@ -15,9 +15,23 @@ class AnggotaController extends Controller
     /**
      * Menampilkan daftar semua anggota.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $anggotas = Anggota::with('user')->latest()->paginate(10);
+        $search = $request->get('search');
+        $query = Anggota::query();
+
+        // Restriction: If not admin, only show self
+        if (!auth()->user()->isAdmin()) {
+            $query->where('user_id', auth()->id());
+        }
+
+        if ($search) {
+            $query->where('nama', 'like', "%{$search}%")
+                  ->orWhere('no_anggota', 'like', "%{$search}%");
+        }
+
+        $anggotas = $query->paginate(10);
+
         return view('anggota.index', compact('anggotas'));
     }
 
@@ -26,6 +40,9 @@ class AnggotaController extends Controller
      */
     public function create()
     {
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
         return view('anggota.create');
     }
 
@@ -63,8 +80,10 @@ class AnggotaController extends Controller
             $user = User::create([
                 'username' => $validatedData['username'],
                 'password' => Hash::make($validatedData['password']),
-                'role' => 0, // Default role anggota
             ]);
+            
+            // Assign role 'anggota'
+            $user->assignRole('anggota');
 
             // 3. Buat Data Anggota (Mapping input form ke kolom DB)
             $anggota = Anggota::create([
@@ -123,6 +142,9 @@ class AnggotaController extends Controller
      */
     public function edit($id)
     {
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
         // Ambil data anggota berdasarkan ID
         $anggota = Anggota::with('user')->findOrFail($id);
         return view('anggota.edit', compact('anggota'));
@@ -133,6 +155,9 @@ class AnggotaController extends Controller
      */
     public function update(Request $request, Anggota $anggota)
     {
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
         // 1. Validasi Input
         $validatedData = $request->validate([
             'password' => 'nullable|string|min:8', 
@@ -149,19 +174,13 @@ class AnggotaController extends Controller
             // Saldo
             'voucher' => 'required|numeric|min:0', // Voucher diperbolehkan diubah
             'saldo_mandiri' => 'required|numeric|min:0', // Saldo Mandiri (dari form edit)
-            
-            // Hak Akses (Role)
-            'role' => 'required|numeric|in:0,1', 
         ]);
 
         DB::beginTransaction();
         try {
-            // 2. Update Akun User (Password dan Role)
+            // 2. Update Akun User (Password)
             if (!empty($validatedData['password'])) {
                 $anggota->user->update(['password' => Hash::make($validatedData['password'])]);
-            }
-            if ($anggota->user) {
-                 $anggota->user->update(['role' => $validatedData['role']]);
             }
 
 
@@ -195,6 +214,9 @@ class AnggotaController extends Controller
      */
     public function destroy(Anggota $anggota)
     {
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
         DB::beginTransaction();
 
         try {

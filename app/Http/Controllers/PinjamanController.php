@@ -26,7 +26,17 @@ class PinjamanController extends Controller
      */
     public function index()
     {
-        $pinjamans = Pinjaman::with('anggota')->latest()->paginate(10);
+        $query = Pinjaman::with('anggota')->latest();
+
+        if (!auth()->user()->isAdmin()) {
+            $anggotaId = auth()->user()->anggota->id ?? null;
+            if (!$anggotaId) {
+                return view('pinjaman.index', ['pinjamans' => collect([])]);
+            }
+            $query->where('anggota_id', $anggotaId);
+        }
+
+        $pinjamans = $query->paginate(10);
         return view('pinjaman.index', compact('pinjamans'));
     }
 
@@ -35,8 +45,12 @@ class PinjamanController extends Controller
      */
     public function create()
     {
-        $anggotas = Anggota::orderBy('nama_lengkap')->get();
-        $loanTypes = $this->loanTypes; // Kirim konfigurasi ke view
+        // Untuk anggota, mereka hanya bisa mendaftar atas nama sendiri
+        $anggotas = auth()->user()->isAdmin() 
+            ? Anggota::orderBy('nama_lengkap')->get() 
+            : collect([auth()->user()->anggota]);
+
+        $loanTypes = $this->loanTypes;
         return view('pinjaman.create', compact('anggotas', 'loanTypes'));
     }
 
@@ -45,6 +59,11 @@ class PinjamanController extends Controller
      */
     public function store(Request $request)
     {
+        // 1. Force anggota_id if not admin
+        if (!auth()->user()->isAdmin()) {
+            $request->merge(['anggota_id' => auth()->user()->anggota->id ?? null]);
+        }
+
         // Mendapatkan kunci jenis pinjaman yang valid
         $validLoanKeys = array_keys($this->loanTypes);
         
@@ -79,8 +98,11 @@ class PinjamanController extends Controller
     /**
      * Menampilkan form persetujuan pinjaman (edit view).
      */
-    public function edit(Pinjaman $pinjaman) // FIXED: Duplikasi 'public' dihapus
+    public function edit(Pinjaman $pinjaman)
     {
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
         $pinjaman->load('anggota'); 
         return view('pinjaman.edit', compact('pinjaman'));
     }
@@ -90,6 +112,9 @@ class PinjamanController extends Controller
      */
     public function update(Request $request, Pinjaman $pinjaman)
     {
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
         $validatedData = $request->validate([
             'status' => 'required|string|in:approved,rejected',
         ]);
@@ -185,6 +210,12 @@ class PinjamanController extends Controller
      */
     public function show(Pinjaman $pinjaman)
     {
+        if (!auth()->user()->isAdmin()) {
+            $anggotaId = auth()->user()->anggota->id ?? null;
+            if ($pinjaman->anggota_id !== $anggotaId) {
+                abort(403, 'Unauthorized action.');
+            }
+        }
         $pinjaman->load('anggota');
         
         $config = $this->loanTypes[$pinjaman->loan_type] ?? null;
@@ -228,6 +259,9 @@ class PinjamanController extends Controller
      */
     public function pay(Pinjaman $pinjaman)
     {
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
         if ($pinjaman->status !== 'approved' || $pinjaman->sisa_pinjaman <= 0) {
             return redirect()->route('pinjaman.show', $pinjaman->id)->with('error', 'Pinjaman tidak valid untuk pembayaran.');
         }
@@ -249,6 +283,9 @@ class PinjamanController extends Controller
      */
     public function processPayment(Request $request, Pinjaman $pinjaman)
     {
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
         // 1. Validasi Input
         $validatedData = $request->validate([
             'jumlah_bayar' => 'required|numeric|min:1',

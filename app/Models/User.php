@@ -52,4 +52,71 @@ class User extends Authenticatable
     {
         return $this->hasOne(Anggota::class);
     }
+
+    /**
+     * Get the roles associated with the user.
+     */
+    public function roles(): \Illuminate\Database\Eloquent\Relations\MorphToMany
+    {
+        return $this->morphToMany(Role::class, 'model', 'model_has_roles');
+    }
+
+    /**
+     * Check if the user has a specific role.
+     * 
+     * @param string $roleName
+     * @return bool
+     */
+    public function hasRole(string $roleName): bool
+    {
+        return $this->roles->contains('name', $roleName);
+    }
+
+    /**
+     * Check if the user has a specific permission.
+     * 
+     * @param string $permissionName
+     * @return bool
+     */
+    public function hasPermission(string $permissionName): bool
+    {
+        foreach ($this->roles as $role) {
+            if ($role->permissions->contains('name', $permissionName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Assign a role to the user.
+     * 
+     * @param string|Role $role
+     */
+    public function assignRole($role)
+    {
+        if (is_string($role)) {
+            $role = Role::where('name', $role)->firstOrFail();
+        }
+        $this->roles()->syncWithoutDetaching($role);
+    }
+    /**
+     * Check if the user is an admin.
+     * 
+     * @return bool
+     */
+    public function isAdmin(): bool
+    {
+        return $this->hasRole('admin');
+    }
+
+    /**
+     * Check if the user is an anggota (member).
+     * 
+     * @return bool
+     */
+    public function isAnggota(): bool
+    {
+        return $this->hasRole('anggota');
+    }
 }

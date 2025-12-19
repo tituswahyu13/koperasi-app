@@ -19,7 +19,9 @@
                     </div>
                     @endif
 
+                    @if(Auth::user()->isAdmin())
                     <a href="{{ route('anggota.create') }}" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md shadow-sm transition">Tambah Anggota</a>
+                    @endif
 
                     <div class="overflow-x-auto mt-6 rounded-lg border">
                         <table class="min-w-full divide-y divide-gray-200">
@@ -39,7 +41,9 @@
                                     {{-- KOLOM IURAN BULANAN (Simpanan Wajib/Iuran) --}}
                                     <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Iuran Wajib</th>
 
+                                    @if(Auth::user()->isAdmin())
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                                    @endif
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
@@ -68,15 +72,11 @@
                                         <div class="text-xs text-gray-500">(W: {{ number_format($anggota->simpanan_wajib, 0, ',', '.') }}/ Kh: {{ number_format($anggota->simpanan_wajib_khusus, 0, ',', '.') }})</div>
                                     </td>
                                     
+                                    @if(Auth::user()->isAdmin())
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
                                         <a href="{{ route('anggota.edit', $anggota->id) }}" class="text-indigo-600 hover:text-indigo-900">Edit</a>
-                                        <!-- <form action="{{ route('anggota.destroy', $anggota->id) }}" method="POST" class="inline ml-4">
-                                            @csrf
-                                            @method('DELETE')
-                                            {{-- PERINGATAN: Menggunakan form konfirmasi native, pastikan ini sesuai dengan lingkungan Anda --}}
-                                            <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('Apakah Anda yakin ingin menghapus anggota ini secara permanen? Penghapusan ini akan menghapus data Anggota dan User.')">Hapus</button>
-                                        </form> -->
                                     </td>
+                                    @endif
                                 </tr>
                                 @endforeach
                             </tbody>

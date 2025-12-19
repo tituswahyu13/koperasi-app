@@ -25,6 +25,7 @@
                     </div>
                     @endif
 
+                    @if(Auth::user()->isAdmin())
                     <div class="flex space-x-3 mb-6">
                         {{-- Tombol Catat Setoran --}}
                         <a href="{{ route('simpanan.create') }}" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md shadow-sm transition">Catat Setoran Baru</a>
@@ -35,6 +36,7 @@
                         {{-- TOMBOL BARU: Penarikan Massal --}}
                         <a href="{{ route('simpanan.mass_withdraw') }}" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-md shadow-sm transition">Penarikan Massal Manasuka</a>
                     </div>
+                    @endif
 
 
                     <div class="overflow-x-auto mt-6 rounded-lg border">
@@ -46,7 +48,9 @@
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Jenis Simpanan</th>
                                     <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Jumlah (Rp)</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r">Deskripsi</th>
+                                    @if(Auth::user()->isAdmin())
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                                    @endif
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
@@ -71,6 +75,7 @@
                                     
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r">{{ $simpanan->deskripsi ?? '-' }}</td>
                                     
+                                    @if(Auth::user()->isAdmin())
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
                                         {{-- Hanya izinkan edit/hapus untuk transaksi yang bukan otomatis --}}
                                         @if (in_array($simpanan->jenis_simpanan, ['mandiri', 'jasa_anggota', 'penarikan_manasuka', 'penarikan_mandiri', 'penarikan_jasa_anggota']))
@@ -84,6 +89,7 @@
                                             <span class="text-gray-400 text-xs">Otomatis</span>
                                         @endif
                                     </td>
+                                    @endif
                                 </tr>
                                 @endforeach
                             </tbody>

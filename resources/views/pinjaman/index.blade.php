@@ -64,7 +64,11 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                         @if ($pinjaman->status == 'pending')
-                                            <a href="{{ route('pinjaman.edit', $pinjaman->id) }}" class="text-indigo-600 hover:text-indigo-900">Setujui/Tolak</a>
+                                            @if(Auth::user()->isAdmin())
+                                                <a href="{{ route('pinjaman.edit', $pinjaman->id) }}" class="text-indigo-600 hover:text-indigo-900">Setujui/Tolak</a>
+                                            @else
+                                                <a href="{{ route('pinjaman.show', $pinjaman->id) }}" class="text-blue-600 hover:text-blue-900">Detail</a>
+                                            @endif
                                         @else
                                             <a href="{{ route('pinjaman.show', $pinjaman->id) }}" class="text-blue-600 hover:text-blue-900">Detail</a>
                                         @endif

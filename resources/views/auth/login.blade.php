@@ -1,4 +1,4 @@
-<?php $title = 'Login - Koperasi Tirta Raharja'; ?>
+<?php $title = 'Login - ' . config('app.name', 'kopkar.tirtaraharja'); ?>
 
 <x-guest-layout>
     <div class="min-h-screen relative overflow-hidden bg-gradient-to-br from-blue-400 to-green-500">

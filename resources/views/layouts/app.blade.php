@@ -4,12 +4,12 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
-        <title>{{ $title ?? 'Koperasi Tirta Raharja' }}</title>
+        <title>{{ $title ?? config('app.name', 'kopkar.tirtaraharja') }}</title>
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     </head>
     <body class="font-sans antialiased">
-        <div x-data="{ sidebarOpen: true }" class="flex min-h-screen bg-gray-100">
+        <div x-data="{ sidebarOpen: true, laporanOpen: false }" class="flex min-h-screen bg-gray-100">
             @include('layouts.sidebar')
 
             <div class="flex-1 flex flex-col overflow-hidden">

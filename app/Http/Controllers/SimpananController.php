@@ -30,18 +30,34 @@ class SimpananController extends Controller
 
     public function index()
     {
-        $simpanans = Simpanan::with('anggota')->latest()->paginate(10);
+        $query = Simpanan::with('anggota')->latest();
+
+        if (!auth()->user()->isAdmin()) {
+            $anggotaId = auth()->user()->anggota->id ?? null;
+            if (!$anggotaId) {
+                return view('simpanan.index', ['simpanans' => collect([])]);
+            }
+            $query->where('anggota_id', $anggotaId);
+        }
+
+        $simpanans = $query->paginate(10);
         return view('simpanan.index', compact('simpanans'));
     }
 
     public function create()
     {
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
         $anggotas = Anggota::orderBy('nama_lengkap')->get();
         return view('simpanan.create', compact('anggotas'));
     }
 
     public function store(Request $request)
     {
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
         // ... (Metode store tetap sama) ...
         $validatedData = $request->validate([
             'anggota_id' => 'required|exists:anggotas,id',
@@ -76,6 +92,9 @@ class SimpananController extends Controller
 
     public function withdraw()
     {
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
         // PERBAIKAN: Mengambil data saldo yang dibutuhkan oleh JavaScript
         $anggotas = Anggota::orderBy('nama_lengkap')->get([
             'id', 
@@ -95,6 +114,9 @@ class SimpananController extends Controller
     
     public function processWithdrawal(Request $request)
     {
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
         // ... (Metode processWithdrawal tetap sama) ...
         $validatedData = $request->validate([
             'anggota_id' => 'required|exists:anggotas,id',
@@ -146,13 +168,19 @@ class SimpananController extends Controller
     
     public function massWithdraw()
     {
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
         $totalManasuka = Anggota::where('status_aktif', 1)->sum('saldo_manasuka');
         return view('simpanan.mass_withdraw', compact('totalManasuka'));
     }
     
     public function processMassWithdrawal(Request $request)
     {
-        // VALIDASI DIPERBAIKI: Hanya butuh tanggal dan deskripsi
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+                // VALIDASI DIPERBAIKI: Hanya butuh tanggal dan deskripsi
         $validatedData = $request->validate([
             'tanggal_penarikan' => 'required|date',
             'deskripsi' => 'nullable|string',
@@ -209,18 +237,30 @@ class SimpananController extends Controller
 
     public function show(Simpanan $simpanan)
     {
+        if (!auth()->user()->isAdmin()) {
+            $anggotaId = auth()->user()->anggota->id ?? null;
+            if ($simpanan->anggota_id !== $anggotaId) {
+                abort(403, 'Unauthorized action.');
+            }
+        }
         $simpanan->load('anggota');
         return view('simpanan.show', compact('simpanan'));
     }
 
     public function edit(Simpanan $simpanan)
     {
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
         $anggotas = Anggota::orderBy('nama_lengkap')->get();
         return view('simpanan.edit', compact('simpanan', 'anggotas'));
     }
 
     public function update(Request $request, Simpanan $simpanan)
     {
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
         // Validasi harus mencakup semua jenis transaksi (setoran dan penarikan yang dicatat)
         $validatedData = $request->validate([
             'anggota_id' => 'required|exists:anggotas,id',
@@ -263,6 +303,9 @@ class SimpananController extends Controller
 
     public function destroy(Simpanan $simpanan)
     {
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
         DB::beginTransaction();
 
         try {
