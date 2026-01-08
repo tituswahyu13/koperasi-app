@@ -15,13 +15,13 @@
 
                     {{-- Menampilkan pesan error jika ada --}}
                     @if ($errors->any())
-                        <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-                            <ul>
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
+                    <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+                        <ul>
+                            @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
                     @endif
 
                     <form action="{{ route('anggota.update', $anggota->id) }}" method="POST">
@@ -104,8 +104,15 @@
                                 <input type="number" name="voucher" id="voucher" class="w-full border-gray-300 rounded-md" value="{{ old('voucher', $anggota->voucher) }}" required min="0">
                                 <x-input-error :messages="$errors->get('voucher')" class="mt-2" />
                             </div>
+
+                            {{-- Saldo Mandiri --}}
+                            <div class="mb-4">
+                                <label for="saldo_mandiri" class="block text-gray-700">Saldo Mandiri (Non-Editable)</label>
+                                <input type="number" id="saldo_mandiri" class="w-full border-gray-300 rounded-md bg-gray-100" value="{{ $anggota->saldo_mandiri }}" disabled>
+                                <p class="text-sm text-gray-500 mt-1">Saldo mandiri hanya dapat diubah melalui transaksi simpanan/penarikan.</p>
+                            </div>
                         </div>
-                        
+
                         <div class="flex items-center justify-end mt-4">
                             <x-primary-button type="submit" class="bg-indigo-600 hover:bg-indigo-700 transition ease-in-out duration-150">
                                 {{ __('Perbarui Data Anggota') }}

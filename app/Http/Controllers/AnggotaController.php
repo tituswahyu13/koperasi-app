@@ -27,7 +27,7 @@ class AnggotaController extends Controller
 
         if ($search) {
             $query->where('nama', 'like', "%{$search}%")
-                  ->orWhere('no_anggota', 'like', "%{$search}%");
+                ->orWhere('no_anggota', 'like', "%{$search}%");
         }
 
         $anggotas = $query->paginate(10);
@@ -61,12 +61,12 @@ class AnggotaController extends Controller
 
             // Iuran Bulanan
             'simpanan_wajib_per_bulan' => 'required|numeric|min:0',
-            'simpanan_wajib_khusus_per_bulan' => 'required|numeric|min:0', 
+            'simpanan_wajib_khusus_per_bulan' => 'required|numeric|min:0',
             'simpanan_manasuka_per_bulan' => 'required|numeric|min:0',
 
             // Saldo Awal
-            'simpanan_pokok_awal' => 'required|numeric|min:0', 
-            'voucher_awal' => 'required|numeric|min:0', 
+            'simpanan_pokok_awal' => 'required|numeric|min:0',
+            'voucher_awal' => 'required|numeric|min:0',
         ]);
 
         DB::beginTransaction();
@@ -81,7 +81,7 @@ class AnggotaController extends Controller
                 'username' => $validatedData['username'],
                 'password' => Hash::make($validatedData['password']),
             ]);
-            
+
             // Assign role 'anggota'
             $user->assignRole('anggota');
 
@@ -94,15 +94,15 @@ class AnggotaController extends Controller
                 'no_hp' => $validatedData['no_hp'],
 
                 // --- IURAN BULANAN ---
-                'simpanan_wajib' => $validatedData['simpanan_wajib_per_bulan'], 
-                'simpanan_wajib_khusus' => $validatedData['simpanan_wajib_khusus_per_bulan'], 
-                'simpanan_manasuka' => $validatedData['simpanan_manasuka_per_bulan'], 
+                'simpanan_wajib' => $validatedData['simpanan_wajib_per_bulan'],
+                'simpanan_wajib_khusus' => $validatedData['simpanan_wajib_khusus_per_bulan'],
+                'simpanan_manasuka' => $validatedData['simpanan_manasuka_per_bulan'],
 
                 // --- SALDO AWAL ---
-                'saldo_pokok' => $jumlah_pokok, 
-                'voucher' => $jumlah_voucher, 
+                'saldo_pokok' => $jumlah_pokok,
+                'voucher' => $jumlah_voucher,
                 // Saldo Mandiri = Voucher Awal (jika Voucher dianggap Saldo Mandiri, atau bisa diatur 0)
-                'saldo_mandiri' => 0, 
+                'saldo_mandiri' => 0,
 
                 // Sisanya disetel ke nilai default (0)
             ]);
@@ -153,31 +153,31 @@ class AnggotaController extends Controller
     /**
      * Memperbarui data anggota di database.
      */
-    public function update(Request $request, Anggota $anggota)
+    public function update(Request $request, $id)
     {
         if (!auth()->user()->isAdmin()) {
             abort(403, 'Unauthorized action.');
         }
         // 1. Validasi Input
         $validatedData = $request->validate([
-            'password' => 'nullable|string|min:8', 
+            'password' => 'nullable|string|min:8',
             'status_aktif' => 'required|in:0,1', // Ditambahkan
             'nama_lengkap' => 'required|string|max:255',
             'alamat' => 'nullable|string',
             'no_hp' => 'nullable|string|max:15',
-            
+
             // Iuran Bulanan
             'simpanan_wajib' => 'required|numeric|min:0',
             'simpanan_wajib_khusus' => 'required|numeric|min:0',
             'simpanan_manasuka' => 'required|numeric|min:0',
-            
+
             // Saldo
             'voucher' => 'required|numeric|min:0', // Voucher diperbolehkan diubah
-            'saldo_mandiri' => 'required|numeric|min:0', // Saldo Mandiri (dari form edit)
         ]);
 
         DB::beginTransaction();
         try {
+            $anggota = Anggota::findOrFail($id);
             // 2. Update Akun User (Password)
             if (!empty($validatedData['password'])) {
                 $anggota->user->update(['password' => Hash::make($validatedData['password'])]);
@@ -194,10 +194,9 @@ class AnggotaController extends Controller
                 'simpanan_wajib_khusus' => $validatedData['simpanan_wajib_khusus'],
                 'simpanan_manasuka' => $validatedData['simpanan_manasuka'],
                 'voucher' => $validatedData['voucher'],
-                'saldo_mandiri' => $validatedData['saldo_mandiri'], // Update Saldo Mandiri
             ];
 
-            $anggota->update($anggotaData); 
+            $anggota->update($anggotaData);
 
             DB::commit();
 
@@ -212,11 +211,12 @@ class AnggotaController extends Controller
     /**
      * Menghapus data anggota dari database.
      */
-    public function destroy(Anggota $anggota)
+    public function destroy($id)
     {
         if (!auth()->user()->isAdmin()) {
             abort(403, 'Unauthorized action.');
         }
+        $anggota = Anggota::findOrFail($id);
         DB::beginTransaction();
 
         try {
@@ -225,11 +225,11 @@ class AnggotaController extends Controller
             $anggota->simpanan()->delete();
 
             // 2. Soft Delete data anggota (Ini harus mengisi deleted_at)
-            $anggota->delete(); 
-            
+            $anggota->delete();
+
             // 3. Hapus akun user secara permanen
             if ($anggota->user) {
-                $anggota->user->forceDelete(); 
+                $anggota->user->forceDelete();
             }
 
             DB::commit();
